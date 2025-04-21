@@ -1,3 +1,4 @@
+import 'package:app/pages/chat_page.dart';
 import 'package:app/pages/home_page.dart';
 import 'package:flutter/material.dart';
 
@@ -15,7 +16,7 @@ class App extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.brown),
         useMaterial3: true,
       ),
-      home: HomePage(),
+      home: ChatPage(),
     );
   }
 }
