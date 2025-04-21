@@ -7,11 +7,6 @@ class Message {
   Message({required this.text, required this.isMe});
 }
 
-List<Message> messages = [
-  Message(text: "Hey, how are you?", isMe: false),
-  Message(text: "I'm good, you?", isMe: true),
-  Message(text: "Same here!", isMe: false),
-];
 
 class ChatPage extends StatefulWidget {
   const ChatPage({super.key});
