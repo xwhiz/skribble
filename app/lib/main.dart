@@ -1,4 +1,5 @@
-import 'package:app/pages/home_page.dart';
+import 'package:app/pages/chat_interface.dart';
+//import 'package:app/pages/home_page.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -11,11 +12,12 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       theme: ThemeData.from(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.brown),
         useMaterial3: true,
       ),
-      home: HomePage(),
+      home: ChatInterface(),
     );
   }
 }
