@@ -1,5 +1,7 @@
-import 'package:app/pages/home_page.dart';
+// Update the import path below if your home_page.dart is in a different location
+import 'pages/home_page.dart';
 import 'package:flutter/material.dart';
+import 'pages/drawing_board_page.dart';
 
 void main() {
   runApp(const App());
@@ -11,11 +13,12 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       theme: ThemeData.from(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.brown),
         useMaterial3: true,
       ),
-      home: HomePage(),
+      home: DrawingBoardPage(),
     );
   }
 }
