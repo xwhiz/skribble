@@ -1,38 +1,49 @@
-import 'package:app/components/FullChatDrawer.dart';
 import 'package:flutter/material.dart';
-class Message {
-  final String text;
-  final bool isMe;
-
-  Message({required this.text, required this.isMe});
-}
+import 'package:app/data/dummy_data.dart';
 
 
 class ChatPage extends StatefulWidget {
-  const ChatPage({super.key});
+  ChatPage({super.key});
 
   @override
   State<ChatPage> createState() => _ChatPageState();
 }
 
 class _ChatPageState extends State<ChatPage> {
+
+  final colors = [
+    Colors.red,
+    Colors.green,
+    Colors.blue,
+    Colors.yellow,
+    Colors.orange,
+    Colors.purple,
+  ];
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap : () {
-        showModalBottomSheet(
-          context: context, 
-          builder: (context) => FullChatDrawer(),
-          );
-      },
-      child: Card(
-        child: ListTile(
-          leading: CircleAvatar(child: Icon(Icons.person),),
-          title: Text("John"),
-          subtitle: Text("Hey, how are you?"),
-          trailing: Icon(Icons.chat),
+    return Column(
+      
+      children: [
+        Expanded(
+          child: ListView.builder(
+            reverse: true,
+            itemCount: dummyMessages.length, 
+            itemBuilder: (BuildContext context, int index) {
+              return Container(
+                color: colors[index % colors.length],
+                child: Row(
+                  children: [
+                    Text(dummyMessages[index].user.name , style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16),),
+                    const SizedBox(width: 10),
+                    Text(dummyMessages[index].content , style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16),),
+                  ],
+                ),
+              );
+            }
+          ),
         ),
-      ),
+      ],
     );
   }
 }
