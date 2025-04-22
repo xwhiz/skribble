@@ -1,11 +1,6 @@
-import 'package:app/components/FullChatDrawer.dart';
 import 'package:flutter/material.dart';
-class Message {
-  final String text;
-  final bool isMe;
+import 'package:app/data/dummy_data.dart';
 
-  Message({required this.text, required this.isMe});
-}
 
 
 class ChatPage extends StatefulWidget {
@@ -18,22 +13,17 @@ class ChatPage extends StatefulWidget {
 class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap : () {
-        showModalBottomSheet(
-          context: context, 
-          builder: (context) => FullChatDrawer(),
-          );
-      },
-      child: Card(
-        child: ListTile(
-          leading: CircleAvatar(child: Icon(Icons.person),),
-          title: Text("John"),
-          subtitle: Text("Hey, how are you?"),
-          trailing: Icon(Icons.chat),
-        ),
-      ),
-    );
+    return ListView.builder(
+      itemBuilder: (BuildContext context, int index) {
+        return Card(
+          child: ListTile(
+            leading: CircleAvatar(child: Icon(Icons.person),),
+            title: Text("John"),
+            subtitle: Text("Hey, how are you?"),
+            trailing: Icon(Icons.chat),
+          ),
+        );
+      });
   }
 }
 

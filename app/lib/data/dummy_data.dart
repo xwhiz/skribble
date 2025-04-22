@@ -22,3 +22,8 @@ List<RoomModel> dummyRooms = [
     messages: dummyMessages,
   ),
 ];
+
+Map<String, dynamic>? initializeItems(){
+  
+  return null;
+}
