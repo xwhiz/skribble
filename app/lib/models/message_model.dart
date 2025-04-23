@@ -1,24 +1,20 @@
-import 'package:app/models/user_model.dart';
+// models/chat_message.dart
+class ChatMessage {
+  final String username;
+  final String message;
+  final bool isCorrectGuess;
+  final bool isSystemMessage;
+  final DateTime timestamp;
+  final String userId;
+  final int playerPosition; // To display different colors based on player position
 
-class Message {
-  final String id;
-  final String content;
-  final User user;
-
-  Message({required this.id, required this.content, required this.user});
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'content': content,
-      'senderId': user,
-    };
-  }
-
-  factory Message.fromJson(Map<String, dynamic> json) {
-    return Message(
-      id: json['id'] as String,
-      content: json['content'] as String,
-      user: json['user'] as User,
-    );
-  }
+  ChatMessage({
+    required this.username,
+    required this.message,
+    this.isCorrectGuess = false,
+    this.isSystemMessage = false,
+    required this.timestamp,
+    required this.userId,
+    required this.playerPosition,
+  });
 }

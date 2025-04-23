@@ -16,7 +16,7 @@ class App extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.brown),
         useMaterial3: true,
       ),
-      home: ChatPage(),
+      home: GamePage(),
     );
   }
 }
