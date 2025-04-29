@@ -1,581 +1,761 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 import 'dart:math';
+import 'dart:ui';
 
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+//=== DrawMode enum ==========================================================
 enum DrawMode { pencil, line, rectangle, circle, fill, eraser }
 
-class DrawingBoardPage extends StatefulWidget {
-  const DrawingBoardPage({super.key});
+//=== Strategy API & Context =================================================
+abstract class Tool {
+  void onPanStart(Offset pos);
+  void onPanUpdate(Offset pos);
+  void onPanEnd();
+  void drawPreview(Canvas canvas);
+}
 
+class DrawingContext {
+  final List<DrawingElement> elements;
+  final Color color;
+  final double strokeWidth;
+  final void Function(DrawingElement) addElement;
+  final void Function(Offset) fillAt;
+
+  DrawingContext({
+    required this.elements,
+    required this.color,
+    required this.strokeWidth,
+    required this.addElement,
+    required this.fillAt,
+  });
+}
+
+//=== Concrete Tools =========================================================
+class PencilTool implements Tool {
+  final DrawingContext ctx;
+  List<Offset> _pts = [];
+  PencilTool(this.ctx);
+
+  @override
+  void onPanStart(Offset pos) => _pts = [pos];
+
+  @override
+  void onPanUpdate(Offset pos) => _pts.add(pos);
+
+  @override
+  void onPanEnd() {
+    if (_pts.length > 1) {
+      ctx.addElement(FreehandDrawing(
+        points: List.from(_pts),
+        color: ctx.color,
+        strokeWidth: ctx.strokeWidth,
+      ));
+    }
+    _pts.clear();
+  }
+
+  @override
+  void drawPreview(Canvas c) {
+    if (_pts.length < 2) return;
+    final paint = Paint()
+      ..color = ctx.color
+      ..strokeWidth = ctx.strokeWidth
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+    final path = Path()..moveTo(_pts.first.dx, _pts.first.dy);
+    for (var p in _pts.skip(1)) path.lineTo(p.dx, p.dy);
+    c.drawPath(path, paint);
+  }
+}
+
+class LineTool implements Tool {
+  final DrawingContext ctx;
+  Offset? _start, _end;
+  LineTool(this.ctx);
+
+  @override
+  void onPanStart(Offset pos) => _start = pos;
+
+  @override
+  void onPanUpdate(Offset pos) => _end = pos;
+
+  @override
+  void onPanEnd() {
+    if (_start != null && _end != null) {
+      ctx.addElement(LineDrawing(
+        start: _start!,
+        end: _end!,
+        color: ctx.color,
+        strokeWidth: ctx.strokeWidth,
+      ));
+    }
+    _start = _end = null;
+  }
+
+  @override
+  void drawPreview(Canvas c) {
+    if (_start != null && _end != null) {
+      final paint = Paint()
+        ..color = ctx.color
+        ..strokeWidth = ctx.strokeWidth
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke;
+      c.drawLine(_start!, _end!, paint);
+    }
+  }
+}
+
+class RectangleTool implements Tool {
+  final DrawingContext ctx;
+  Offset? _start, _end;
+  RectangleTool(this.ctx);
+
+  @override
+  void onPanStart(Offset pos) => _start = pos;
+
+  @override
+  void onPanUpdate(Offset pos) => _end = pos;
+
+  @override
+  void onPanEnd() {
+    if (_start != null && _end != null) {
+      ctx.addElement(RectangleDrawing(
+        start: _start!,
+        end: _end!,
+        color: ctx.color,
+        strokeWidth: ctx.strokeWidth,
+        isFilled: false,
+      ));
+    }
+    _start = _end = null;
+  }
+
+  @override
+  void drawPreview(Canvas c) {
+    if (_start != null && _end != null) {
+      final paint = Paint()
+        ..color = ctx.color
+        ..strokeWidth = ctx.strokeWidth
+        ..style = PaintingStyle.stroke;
+      c.drawRect(Rect.fromPoints(_start!, _end!), paint);
+    }
+  }
+}
+
+class CircleTool implements Tool {
+  final DrawingContext ctx;
+  Offset? _start, _end;
+  CircleTool(this.ctx);
+
+  @override
+  void onPanStart(Offset pos) => _start = pos;
+
+  @override
+  void onPanUpdate(Offset pos) => _end = pos;
+
+  @override
+  void onPanEnd() {
+    if (_start != null && _end != null) {
+      ctx.addElement(CircleDrawing(
+        start: _start!,
+        end: _end!,
+        color: ctx.color,
+        strokeWidth: ctx.strokeWidth,
+        isFilled: false,
+      ));
+    }
+    _start = _end = null;
+  }
+
+  @override
+  void drawPreview(Canvas c) {
+    if (_start != null && _end != null) {
+      final center = Offset(
+        (_start!.dx + _end!.dx) / 2,
+        (_start!.dy + _end!.dy) / 2,
+      );
+      final radius = (_start! - _end!).distance / 2;
+      final paint = Paint()
+        ..color = ctx.color
+        ..strokeWidth = ctx.strokeWidth
+        ..style = PaintingStyle.stroke;
+      c.drawCircle(center, radius, paint);
+    }
+  }
+}
+
+class EraserTool implements Tool {
+  final DrawingContext ctx;
+  List<Offset> _pts = [];
+  EraserTool(this.ctx);
+
+  @override
+  void onPanStart(Offset pos) => _pts = [pos];
+
+  @override
+  void onPanUpdate(Offset pos) => _pts.add(pos);
+
+  @override
+  void onPanEnd() {
+    if (_pts.length > 1) {
+      ctx.addElement(FreehandDrawing(
+        points: List.from(_pts),
+        color: Colors.white,
+        strokeWidth: ctx.strokeWidth * 2,
+      ));
+    }
+    _pts.clear();
+  }
+
+  @override
+  void drawPreview(Canvas c) {
+    if (_pts.length < 2) return;
+    final paint = Paint()
+      ..color = Colors.white
+      ..strokeWidth = ctx.strokeWidth * 2
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+    final path = Path()..moveTo(_pts.first.dx, _pts.first.dy);
+    for (var p in _pts.skip(1)) path.lineTo(p.dx, p.dy);
+    c.drawPath(path, paint);
+  }
+}
+
+class FillTool implements Tool {
+  final DrawingContext ctx;
+  FillTool(this.ctx);
+
+  @override
+  void onPanStart(Offset pos) => ctx.fillAt(pos);
+
+  @override
+  void onPanUpdate(Offset pos) {}
+
+  @override
+  void onPanEnd() {}
+
+  @override
+  void drawPreview(Canvas canvas) {}
+}
+
+//=== Page & State ===========================================================
+class DrawingBoardPage extends StatefulWidget {
+  const DrawingBoardPage({Key? key}) : super(key: key);
   @override
   State<DrawingBoardPage> createState() => _DrawingBoardPageState();
 }
 
 class _DrawingBoardPageState extends State<DrawingBoardPage> {
-  List<DrawingElement> _elements = [];
+  final List<DrawingElement> _elements = [];
   Color _selectedColor = Colors.black;
   double _strokeWidth = 4.0;
-  DrawMode _drawMode = DrawMode.pencil;
-  bool _isDrawing = false;
-
-  // Add a scroll controller for horizontal tool options
+  late Map<DrawMode, Tool> _tools;
+  late Tool _currentTool;
   final ScrollController _toolsController = ScrollController();
 
-  // Common colors for drawing
-  final List<Color> _colors = [
-    Colors.black,
-    Colors.white,
-    Colors.red,
-    Colors.blue,
-    Colors.green,
-    Colors.yellow,
-    Colors.orange,
-    Colors.purple,
-    Colors.pink,
-    Colors.brown,
-    Colors.teal,
-    Colors.indigo,
-  ];
+  // Timer countdown from 60s
+  int _seconds = 60;
+  Timer? _timer;
 
-  Offset? _startPoint;
-  Offset? _endPoint;
-  List<Offset> _currentPoints = [];
-
-  void _startDrawing(Offset offset) {
-    setState(() {
-      _isDrawing = true;
-      _startPoint = offset;
-      _endPoint = offset;
-      _currentPoints = [offset];
-    });
+  // Format seconds as mm:ss
+  String get _timerText {
+    final minutes = _seconds ~/ 60;
+    final seconds = _seconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
-  void _updateDrawing(Offset offset) {
-    if (!_isDrawing) return;
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      setState(() {
+        if (_seconds > 0)
+          _seconds--;
+        else
+          _timer?.cancel();
+      });
+    });
+    _rebuildTools();
 
+    // Start listening for updates from other users
+    listenForUpdates();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _toolsController.dispose();
+    super.dispose();
+  }
+
+  void _rebuildTools() {
+    _tools = {
+      for (var mode in DrawMode.values) mode: _makeTool(mode),
+    };
+    _currentTool = _tools[_selectedMode]!;
+  }
+
+  // Get the full drawing state as JSON
+  Map<String, dynamic> exportDrawing() {
+    return {
+      'elements': _elements.map((e) => e.toJson()).toList(),
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    };
+  }
+
+  // Import a drawing from JSON
+  void importDrawing(Map<String, dynamic> json) {
+    final elementsList = json['elements'] as List;
     setState(() {
-      _endPoint = offset;
-      if (_drawMode == DrawMode.pencil || _drawMode == DrawMode.eraser) {
-        _currentPoints.add(offset);
+      _elements.clear();
+      for (var elem in elementsList) {
+        try {
+          _elements.add(DrawingElement.fromJson(elem));
+        } catch (e) {
+          print('Error parsing element: $e');
+        }
       }
     });
   }
 
-  void _stopDrawing() {
-    if (!_isDrawing) return;
+// Sync drawing with Firebase
+  void syncWithFirebase() {
+    try {
+      final drawingData = exportDrawing();
+      // This creates/updates a document at games/game-id with a field called "drawing"
+      FirebaseFirestore.instance
+          .collection('games')
+          .doc('game-id') // Use dynamic game IDs in production
+          .set({'drawing': drawingData}, SetOptions(merge: true))
+          .then((_) => print('Drawing synced to Firebase'))
+          .catchError((e) => print('Error syncing drawing: $e'));
+    } catch (e) {
+      print('Error preparing drawing data: $e');
+    }
+  }
 
-    if (_startPoint != null && _endPoint != null) {
-      setState(() {
-        switch (_drawMode) {
-          case DrawMode.pencil:
-            _elements.add(FreehandDrawing(
-              points: List.from(_currentPoints),
-              color: _selectedColor,
-              strokeWidth: _strokeWidth,
-            ));
-            break;
-          case DrawMode.eraser:
-            _elements.add(FreehandDrawing(
-              points: List.from(_currentPoints),
-              color: Colors.white, // Canvas background color
-              strokeWidth: _strokeWidth * 2,
-            ));
-            break;
-          case DrawMode.line:
-            _elements.add(LineDrawing(
-              start: _startPoint!,
-              end: _endPoint!,
-              color: _selectedColor,
-              strokeWidth: _strokeWidth,
-            ));
-            break;
-          case DrawMode.rectangle:
+// Listen for updates
+  void listenForUpdates() {
+    FirebaseFirestore.instance
+        .collection('games')
+        .doc('game-id') // Use dynamic game IDs in production
+        .snapshots()
+        .listen(
+      (snapshot) {
+        if (snapshot.exists) {
+          final data = snapshot.data();
+          if (data != null && data['drawing'] != null) {
+            print('Received drawing update from Firebase');
+            importDrawing(data['drawing']);
+          }
+        }
+      },
+      onError: (e) => print('Error listening to drawing updates: $e'),
+    );
+  }
+
+  Tool _makeTool(DrawMode mode) {
+    final ctx = DrawingContext(
+      elements: _elements,
+      color: _selectedColor,
+      strokeWidth: _strokeWidth,
+      addElement: (e) => setState(() {
+        _elements.add(e);
+        // Sync after each change
+        syncWithFirebase(); // <-- Add this call
+      }),
+      fillAt: (pos) => setState(() {
+        _fillShape(pos);
+        syncWithFirebase(); // <-- Add this call
+      }),
+    );
+    switch (mode) {
+      case DrawMode.pencil:
+        return PencilTool(ctx);
+      case DrawMode.line:
+        return LineTool(ctx);
+      case DrawMode.rectangle:
+        return RectangleTool(ctx);
+      case DrawMode.circle:
+        return CircleTool(ctx);
+      case DrawMode.eraser:
+        return EraserTool(ctx);
+      case DrawMode.fill:
+        return FillTool(ctx);
+    }
+  }
+
+  DrawMode _selectedMode = DrawMode.pencil;
+  void _selectTool(DrawMode mode) {
+    setState(() {
+      _selectedMode = mode;
+      _rebuildTools();
+    });
+  }
+
+  void _fillShape(Offset pos) {
+    setState(() {
+      bool applied = false;
+
+      // iterate top‐down
+      for (var e in _elements.reversed) {
+        if (e is RectangleDrawing) {
+          final rect = Rect.fromPoints(e.start, e.end);
+          if (rect.contains(pos)) {
             _elements.add(RectangleDrawing(
-              start: _startPoint!,
-              end: _endPoint!,
+              start: e.start,
+              end: e.end,
               color: _selectedColor,
-              strokeWidth: _strokeWidth,
-              isFilled: false,
+              strokeWidth: e.strokeWidth,
+              isFilled: true,
             ));
+            applied = true;
             break;
-          case DrawMode.circle:
+          }
+        }
+        if (e is CircleDrawing) {
+          final center = Offset(
+            (e.start.dx + e.end.dx) / 2,
+            (e.start.dy + e.end.dy) / 2,
+          );
+          final radius = (e.start - e.end).distance / 2;
+          if ((pos - center).distance <= radius) {
             _elements.add(CircleDrawing(
-              start: _startPoint!,
-              end: _endPoint!,
+              start: e.start,
+              end: e.end,
               color: _selectedColor,
-              strokeWidth: _strokeWidth,
-              isFilled: false,
-            ));
-            break;
-          case DrawMode.fill:
-            // Handled in onTapDown
-            break;
-        }
-        _currentPoints = [];
-        _startPoint = null;
-        _endPoint = null;
-        _isDrawing = false;
-      });
-    }
-  }
-
-// Only the _fillShape method needs to be updated, so I'll provide just that method
-
-  void _fillShape(Offset position) {
-    bool shapeFilled = false;
-
-    // For rectangles and circles, modify them in place
-    for (int i = _elements.length - 1; i >= 0; i--) {
-      final element = _elements[i];
-
-      if (element is RectangleDrawing && !element.isFilled) {
-        Rect rect = Rect.fromPoints(element.start, element.end);
-        if (rect.contains(position)) {
-          setState(() {
-            _elements[i] = RectangleDrawing(
-              start: element.start,
-              end: element.end,
-              color: _selectedColor,
-              strokeWidth: element.strokeWidth,
+              strokeWidth: e.strokeWidth,
               isFilled: true,
-            );
-          });
-          shapeFilled = true;
-          break;
-        }
-      } else if (element is CircleDrawing && !element.isFilled) {
-        final center = Offset(
-          (element.start.dx + element.end.dx) / 2,
-          (element.start.dy + element.end.dy) / 2,
-        );
-        final radius = (element.start - element.end).distance / 2;
-        if ((position - center).distance <= radius) {
-          setState(() {
-            _elements[i] = CircleDrawing(
-              start: element.start,
-              end: element.end,
-              color: _selectedColor,
-              strokeWidth: element.strokeWidth,
-              isFilled: true,
-            );
-          });
-          shapeFilled = true;
-          break;
-        }
-      }
-    }
-
-    // Look for potential closed paths formed by multiple elements
-    if (!shapeFilled) {
-      // Find all line segments (from lines or freehand drawings)
-      List<LineSegment> allSegments = [];
-
-      for (var element in _elements) {
-        if (element is LineDrawing) {
-          allSegments.add(LineSegment(element.start, element.end));
-        } else if (element is FreehandDrawing) {
-          for (int i = 0; i < element.points.length - 1; i++) {
-            allSegments
-                .add(LineSegment(element.points[i], element.points[i + 1]));
-          }
-        }
-      }
-
-      // Try to find closed shapes formed by these segments
-      List<List<LineSegment>> closedShapes = _findClosedShapes(allSegments);
-
-      for (var shape in closedShapes) {
-        if (_isPointInsidePolygon(shape, position)) {
-          // Create a filled polygon
-          List<Offset> points = [];
-          if (shape.isNotEmpty) {
-            points.add(shape[0].start);
-            for (var segment in shape) {
-              points.add(segment.end);
-            }
-          }
-
-          setState(() {
-            _elements.add(FilledPathDrawing(
-              points: points,
-              color: _selectedColor.withOpacity(0.7), // Semi-transparent fill
-              strokeWidth: 1.0,
-              outlineColor: _selectedColor,
             ));
-          });
-
-          shapeFilled = true;
-          break;
+            applied = true;
+            break;
+          }
         }
-      }
-    }
-
-    // If no shape found and filled, fill the entire canvas
-    if (!shapeFilled) {
-      setState(() {
-        // Get the size of the canvas
-        final Size canvasSize = MediaQuery.of(context).size;
-
-        // Create a full-canvas rectangle with the selected fill color
-        _elements.add(RectangleDrawing(
-          start: Offset.zero,
-          end: Offset(canvasSize.width, canvasSize.height),
-          color: _selectedColor,
-          strokeWidth: 0,
-          isFilled: true,
-        ));
-      });
-    }
-  }
-
-  // Find possible closed shapes from a collection of line segments
-  List<List<LineSegment>> _findClosedShapes(List<LineSegment> segments) {
-    List<List<LineSegment>> closedShapes = [];
-
-    // Simple implementation to find triangles
-    if (segments.length < 3) return closedShapes;
-
-    // Check each possible combination of 3 segments
-    for (int i = 0; i < segments.length; i++) {
-      for (int j = i + 1; j < segments.length; j++) {
-        for (int k = j + 1; k < segments.length; k++) {
-          var s1 = segments[i];
-          var s2 = segments[j];
-          var s3 = segments[k];
-
-          // Check if these three segments form a triangle
-          if (_segmentsConnect(s1, s2) &&
-              _segmentsConnect(s2, s3) &&
-              _segmentsConnect(s3, s1)) {
-            closedShapes.add([s1, s2, s3]);
+        if (e is FreehandDrawing) {
+          final path = Path()..moveTo(e.points.first.dx, e.points.first.dy);
+          for (var p in e.points.skip(1)) path.lineTo(p.dx, p.dy);
+          path.close();
+          if (path.contains(pos)) {
+            _elements.add(FillPolygonDrawing(
+              points: List.from(e.points),
+              color: _selectedColor,
+            ));
+            applied = true;
+            break;
           }
         }
       }
-    }
 
-    return closedShapes;
-  }
-
-  // Check if two segments connect (share an endpoint)
-  bool _segmentsConnect(LineSegment a, LineSegment b) {
-    double tolerance = 10.0; // Allow some tolerance for connections
-
-    return (a.start - b.start).distance < tolerance ||
-        (a.start - b.end).distance < tolerance ||
-        (a.end - b.start).distance < tolerance ||
-        (a.end - b.end).distance < tolerance;
-  }
-
-  // Check if a point is inside a polygon using ray casting algorithm
-  bool _isPointInsidePolygon(List<LineSegment> segments, Offset point) {
-    if (segments.isEmpty) return false;
-
-    // Extract vertices from segments
-    List<Offset> vertices = [];
-    if (segments.isNotEmpty) {
-      vertices.add(segments[0].start);
-      for (var segment in segments) {
-        vertices.add(segment.end);
+      if (!applied) {
+        // full‐canvas fill
+        _elements.add(FillCanvasDrawing(color: _selectedColor));
       }
-    }
-
-    if (vertices.length < 3) return false;
-
-    // Ray casting algorithm
-    bool isInside = false;
-    int j = vertices.length - 1;
-
-    for (int i = 0; i < vertices.length; i++) {
-      if ((vertices[i].dy > point.dy) != (vertices[j].dy > point.dy) &&
-          (point.dx <
-              vertices[i].dx +
-                  (vertices[j].dx - vertices[i].dx) *
-                      (point.dy - vertices[i].dy) /
-                      (vertices[j].dy - vertices[i].dy))) {
-        isInside = !isInside;
-      }
-      j = i;
-    }
-
-    return isInside;
-  }
-
-  // Old implementation - kept for reference but not used
-  bool _isPointInsideClosedPath(List<Offset> points, Offset point) {
-    if (points.length < 3)
-      return false; // Need at least 3 points to form a shape
-
-    // Check if the path is reasonably closed
-    double closureThreshold = 20.0; // Adjust based on your needs
-    if ((points.first - points.last).distance > closureThreshold) {
-      return false; // Path is not closed
-    }
-
-    // Ray casting algorithm
-    bool isInside = false;
-    int j = points.length - 1;
-
-    for (int i = 0; i < points.length; i++) {
-      if ((points[i].dy > point.dy) != (points[j].dy > point.dy) &&
-          (point.dx <
-              points[i].dx +
-                  (points[j].dx - points[i].dx) *
-                      (point.dy - points[i].dy) /
-                      (points[j].dy - points[i].dy))) {
-        isInside = !isInside;
-      }
-      j = i;
-    }
-
-    return isInside;
-  }
-
-  void _clearCanvas() {
-    setState(() {
-      _elements = [];
     });
   }
 
-  void _undoLastElement() {
-    if (_elements.isNotEmpty) {
-      setState(() {
-        _elements.removeLast();
+  void _clearCanvas() => setState(() {
+        _elements.clear();
+        syncWithFirebase();
       });
-    }
-  }
+
+  void _undo() => setState(() {
+        if (_elements.isNotEmpty) _elements.removeLast();
+        syncWithFirebase();
+      });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Skribbl Board",
-            style: TextStyle(fontWeight: FontWeight.bold)),
-        elevation: 0,
+        title: const Text('Skribbl Board'),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
+        elevation: 0,
         actions: [
+          IconButton(icon: const Icon(Icons.undo), onPressed: _undo),
           IconButton(
-            icon: const Icon(Icons.undo),
-            onPressed: _undoLastElement,
-            tooltip: 'Undo',
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: _clearCanvas,
-            tooltip: 'Clear All',
-          ),
+              icon: const Icon(Icons.delete_outline), onPressed: _clearCanvas),
         ],
       ),
-      body: Stack(
-        children: [
-          // Canvas area
-          Builder(
-            builder: (context) => GestureDetector(
-              onPanStart: (details) {
-                final renderBox = context.findRenderObject() as RenderBox;
-                final offset = renderBox.globalToLocal(details.globalPosition);
-                if (_drawMode == DrawMode.fill) {
-                  _fillShape(offset);
-                } else {
-                  _startDrawing(offset);
-                }
-              },
-              onPanUpdate: (details) {
-                final renderBox = context.findRenderObject() as RenderBox;
-                _updateDrawing(renderBox.globalToLocal(details.globalPosition));
-              },
-              onPanEnd: (details) => _stopDrawing(),
-              child: Container(
-                color: Colors.white,
-                child: CustomPaint(
-                  painter: _DrawingPainter(
-                    elements: _elements,
-                    currentMode: _drawMode,
-                    currentColor: _selectedColor,
-                    currentStrokeWidth: _strokeWidth,
-                    startPoint: _startPoint,
-                    endPoint: _endPoint,
-                    currentPoints: _currentPoints,
-                  ),
-                  size: Size.infinite,
-                ),
+      body: Stack(children: [
+        // Top bar: centered dummy word + right‐aligned timer
+        Positioned(
+          top: 16,
+          left: 0,
+          right: 0,
+          child: Stack(children: [
+            Center(
+              child: Text(
+                'HOUSE',
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ),
-          ),
-
-          // Bottom tools panel
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: 130,
-              padding: const EdgeInsets.all(8.0),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, -3),
-                  ),
-                ],
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.timer),
+                  const SizedBox(width: 4),
+                  Text(_timerText, style: const TextStyle(fontSize: 16)),
+                ]),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Tool selection
-                  SizedBox(
-                    height: 50,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      controller: _toolsController,
-                      children: [
-                        _buildTool(Icons.brush, DrawMode.pencil, "Draw"),
-                        // _buildTool(Icons.show_chart, DrawMode.line, "Line"),
-                        // _buildTool(
-                        //     Icons.crop_square, DrawMode.rectangle, "Rectangle"),
-                        // _buildTool(
-                        //     Icons.circle_outlined, DrawMode.circle, "Circle"),
-                        _buildTool(
-                            Icons.format_color_fill, DrawMode.fill, "Fill"),
-                        // _buildTool(
-                        //     Icons.auto_fix_normal, DrawMode.eraser, "Eraser"),
-                        // const SizedBox(width: 8),
-                        // Brush size slider
-                        Container(
+            ),
+          ]),
+        ),
+
+        // Canvas
+        Builder(builder: (ctx) {
+          return GestureDetector(
+            onPanStart: (d) {
+              final box = ctx.findRenderObject() as RenderBox;
+              _currentTool.onPanStart(box.globalToLocal(d.globalPosition));
+              setState(() {});
+            },
+            onPanUpdate: (d) {
+              final box = ctx.findRenderObject() as RenderBox;
+              _currentTool.onPanUpdate(box.globalToLocal(d.globalPosition));
+              setState(() {});
+            },
+            onPanEnd: (_) {
+              _currentTool.onPanEnd();
+            },
+            child: CustomPaint(
+              size: Size.infinite,
+              painter: _DrawingPainter(
+                elements: _elements,
+                previewTool: _currentTool,
+              ),
+            ),
+          );
+        }),
+
+        // Bottom tools panel
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            height: 140,
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8)],
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              SizedBox(
+                height: 50,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  controller: _toolsController,
+                  children: DrawMode.values.map((mode) {
+                    final icon = {
+                      DrawMode.pencil: Icons.brush,
+                      DrawMode.line: Icons.show_chart,
+                      DrawMode.rectangle: Icons.crop_square,
+                      DrawMode.circle: Icons.circle_outlined,
+                      DrawMode.fill: Icons.format_color_fill,
+                      DrawMode.eraser: Icons.auto_fix_normal,
+                    }[mode]!;
+                    final sel = _selectedMode == mode;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: GestureDetector(
+                        onTap: () => _selectTool(mode),
+                        child: Container(
+                          width: 45,
+                          height: 45,
+                          decoration: BoxDecoration(
+                            color: sel ? Colors.blue.withOpacity(0.2) : null,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                                color:
+                                    sel ? Colors.blue : Colors.grey.shade300),
+                          ),
+                          child: Icon(icon,
+                              color: sel ? Colors.blue : Colors.black54),
+                        ),
+                      ),
+                    );
+                  }).toList()
+                    ..addAll([
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: const SizedBox(width: 8),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Container(
                           width: 150,
                           padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.line_weight, size: 16),
-                              Expanded(
-                                child: Slider(
-                                  min: 1.0,
-                                  max: 20.0,
-                                  value: _strokeWidth,
-                                  activeColor: _selectedColor,
-                                  onChanged: (value) {
-                                    setState(() => _strokeWidth = value);
-                                  },
-                                ),
+                          child: Row(children: [
+                            const Icon(Icons.line_weight, size: 16),
+                            Expanded(
+                              child: Slider(
+                                min: 1,
+                                max: 20,
+                                value: _strokeWidth,
+                                activeColor: _selectedColor,
+                                onChanged: (v) => setState(() {
+                                  _strokeWidth = v;
+                                  _rebuildTools();
+                                }),
                               ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  // Color selection
-                  SizedBox(
-                    height: 50,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      children: _colors.map((color) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: GestureDetector(
-                            onTap: () => setState(() => _selectedColor = color),
-                            child: Container(
-                              width: 30,
-                              height: 30,
-                              decoration: BoxDecoration(
-                                color: color,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.black26,
-                                  width: _selectedColor == color ? 2 : 1,
-                                ),
-                                boxShadow: _selectedColor == color
-                                    ? [
-                                        BoxShadow(
-                                            color: color.withOpacity(0.5),
-                                            blurRadius: 6)
-                                      ]
-                                    : null,
-                              ),
-                              child: _selectedColor == color
-                                  ? Icon(Icons.check,
-                                      color: color.computeLuminance() > 0.5
-                                          ? Colors.black
-                                          : Colors.white,
-                                      size: 16)
-                                  : null,
                             ),
+                          ]),
+                        ),
+                      ),
+                    ]),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    Colors.black,
+                    Colors.white,
+                    Colors.red,
+                    Colors.blue,
+                    Colors.green,
+                    Colors.yellow,
+                    Colors.orange,
+                    Colors.purple,
+                    Colors.pink,
+                    Colors.brown,
+                    Colors.teal,
+                    Colors.indigo,
+                  ].map((c) {
+                    final sel = c == _selectedColor;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: GestureDetector(
+                        onTap: () => setState(() {
+                          _selectedColor = c;
+                          _rebuildTools();
+                        }),
+                        child: Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: c,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                                color: Colors.black26, width: sel ? 2 : 1),
                           ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ],
+                          child: sel
+                              ? Icon(Icons.check,
+                                  size: 16,
+                                  color: c.computeLuminance() > 0.5
+                                      ? Colors.black
+                                      : Colors.white)
+                              : null,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTool(IconData icon, DrawMode mode, String tooltip) {
-    final isSelected = _drawMode == mode;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Tooltip(
-        message: tooltip,
-        child: GestureDetector(
-          onTap: () => setState(() => _drawMode = mode),
-          child: Container(
-            width: 45,
-            height: 45,
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? Colors.blue.withOpacity(0.2)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: isSelected ? Colors.blue : Colors.grey.shade300,
-                width: 1,
-              ),
-            ),
-            child: Icon(
-              icon,
-              color: isSelected ? Colors.blue : Colors.black54,
-            ),
+            ]),
           ),
         ),
-      ),
+      ]),
     );
   }
 }
 
-// New helper class to represent line segments
-class LineSegment {
-  final Offset start;
-  final Offset end;
+//=== Painter ================================================================
+class _DrawingPainter extends CustomPainter {
+  final List<DrawingElement> elements;
+  final Tool previewTool;
 
-  LineSegment(this.start, this.end);
+  _DrawingPainter({required this.elements, required this.previewTool});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (var e in elements) e.draw(canvas);
+    previewTool.drawPreview(canvas);
+  }
+
+  @override
+  bool shouldRepaint(covariant _DrawingPainter old) => true;
 }
 
+//=== DrawingElement classes (unchanged) =====================================
 abstract class DrawingElement {
   final Color color;
   final double strokeWidth;
-
   DrawingElement({required this.color, required this.strokeWidth});
-
   void draw(Canvas canvas);
+  // Add this abstract method declaration:
+  Map<String, dynamic> toJson();
+
+  factory DrawingElement.fromJson(Map<String, dynamic> json) {
+    final type = json['type'] as String;
+    final color = Color(json['color'] as int);
+    final strokeWidth = json['strokeWidth'] as double;
+
+    switch (type) {
+      case 'freehand':
+        final pointsData = json['points'] as List;
+        final points = pointsData
+            .map((p) => Offset(p['x'] as double, p['y'] as double))
+            .toList();
+        return FreehandDrawing(
+          points: points,
+          color: color,
+          strokeWidth: strokeWidth,
+        );
+      case 'line':
+        return LineDrawing(
+          start: Offset(json['startX'] as double, json['startY'] as double),
+          end: Offset(json['endX'] as double, json['endY'] as double),
+          color: color,
+          strokeWidth: strokeWidth,
+        );
+      case 'rectangle':
+        return RectangleDrawing(
+          start: Offset(json['startX'] as double, json['startY'] as double),
+          end: Offset(json['endX'] as double, json['endY'] as double),
+          color: color,
+          strokeWidth: strokeWidth,
+          isFilled: json['isFilled'] as bool,
+        );
+      case 'circle':
+        return CircleDrawing(
+          start: Offset(json['startX'] as double, json['startY'] as double),
+          end: Offset(json['endX'] as double, json['endY'] as double),
+          color: color,
+          strokeWidth: strokeWidth,
+          isFilled: json['isFilled'] as bool,
+        );
+      case 'fillpolygon':
+        final pointsData = json['points'] as List;
+        final points = pointsData
+            .map((p) => Offset(p['x'] as double, p['y'] as double))
+            .toList();
+        return FillPolygonDrawing(
+          points: points,
+          color: color,
+        );
+      case 'fillcanvas':
+        return FillCanvasDrawing(
+          color: color,
+        );
+      default:
+        throw FormatException('Unknown drawing element type: $type');
+    }
+  }
 }
 
 class FreehandDrawing extends DrawingElement {
   final List<Offset> points;
-
   FreehandDrawing({
     required this.points,
     required Color color,
@@ -584,29 +764,30 @@ class FreehandDrawing extends DrawingElement {
 
   @override
   void draw(Canvas canvas) {
+    if (points.length < 2) return;
     final paint = Paint()
       ..color = color
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
-
-    if (points.length < 2) return;
-
-    final path = Path();
-    path.moveTo(points.first.dx, points.first.dy);
-
-    for (int i = 1; i < points.length; i++) {
-      path.lineTo(points[i].dx, points[i].dy);
-    }
-
+    final path = Path()..moveTo(points.first.dx, points.first.dy);
+    for (var p in points.skip(1)) path.lineTo(p.dx, p.dy);
     canvas.drawPath(path, paint);
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'type': 'freehand', // different for each type
+      'color': color.value,
+      'strokeWidth': strokeWidth,
+      'points': points.map((p) => {'x': p.dx, 'y': p.dy}).toList(),
+    };
   }
 }
 
 class LineDrawing extends DrawingElement {
-  final Offset start;
-  final Offset end;
-
+  final Offset start, end;
   LineDrawing({
     required this.start,
     required this.end,
@@ -621,16 +802,26 @@ class LineDrawing extends DrawingElement {
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
-
     canvas.drawLine(start, end, paint);
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'type': 'line',
+      'color': color.value,
+      'strokeWidth': strokeWidth,
+      'startX': start.dx,
+      'startY': start.dy,
+      'endX': end.dx,
+      'endY': end.dy,
+    };
   }
 }
 
 class RectangleDrawing extends DrawingElement {
-  final Offset start;
-  final Offset end;
+  final Offset start, end;
   final bool isFilled;
-
   RectangleDrawing({
     required this.start,
     required this.end,
@@ -644,18 +835,28 @@ class RectangleDrawing extends DrawingElement {
     final paint = Paint()
       ..color = color
       ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round
       ..style = isFilled ? PaintingStyle.fill : PaintingStyle.stroke;
-
     canvas.drawRect(Rect.fromPoints(start, end), paint);
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'type': 'rectangle',
+      'color': color.value,
+      'strokeWidth': strokeWidth,
+      'startX': start.dx,
+      'startY': start.dy,
+      'endX': end.dx,
+      'endY': end.dy,
+      'isFilled': isFilled,
+    };
   }
 }
 
 class CircleDrawing extends DrawingElement {
-  final Offset start;
-  final Offset end;
+  final Offset start, end;
   final bool isFilled;
-
   CircleDrawing({
     required this.start,
     required this.end,
@@ -666,149 +867,76 @@ class CircleDrawing extends DrawingElement {
 
   @override
   void draw(Canvas canvas) {
+    final center = Offset((start.dx + end.dx) / 2, (start.dy + end.dy) / 2);
+    final radius = (start - end).distance / 2;
     final paint = Paint()
       ..color = color
       ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round
       ..style = isFilled ? PaintingStyle.fill : PaintingStyle.stroke;
-
-    final center = Offset((start.dx + end.dx) / 2, (start.dy + end.dy) / 2);
-    final radius = (start - end).distance / 2;
     canvas.drawCircle(center, radius, paint);
   }
-}
-
-class FillPoint extends DrawingElement {
-  final Offset position;
-  final double size;
-
-  FillPoint({
-    required this.position,
-    required Color color,
-    required this.size,
-  }) : super(color: color, strokeWidth: 1.0);
 
   @override
-  void draw(Canvas canvas) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    canvas.drawCircle(position, size, paint);
+  Map<String, dynamic> toJson() {
+    return {
+      'type': 'circle',
+      'color': color.value,
+      'strokeWidth': strokeWidth,
+      'startX': start.dx,
+      'startY': start.dy,
+      'endX': end.dx,
+      'endY': end.dy,
+      'isFilled': isFilled,
+    };
   }
 }
 
-class FilledPathDrawing extends DrawingElement {
+class FillPolygonDrawing extends DrawingElement {
   final List<Offset> points;
-  final Color outlineColor;
-
-  FilledPathDrawing({
-    required this.points,
-    required Color color,
-    required double strokeWidth,
-    required this.outlineColor,
-  }) : super(color: color, strokeWidth: strokeWidth);
+  FillPolygonDrawing({required this.points, required Color color})
+      : super(color: color, strokeWidth: 0);
 
   @override
   void draw(Canvas canvas) {
     if (points.length < 3) return;
-
-    // Draw the fill
-    final fillPaint = Paint()
+    final paint = Paint()
       ..color = color
       ..style = PaintingStyle.fill;
-
-    final path = Path();
-    path.moveTo(points.first.dx, points.first.dy);
-
-    for (int i = 1; i < points.length; i++) {
-      path.lineTo(points[i].dx, points[i].dy);
-    }
+    final path = Path()..moveTo(points.first.dx, points.first.dy);
+    for (var p in points.skip(1)) path.lineTo(p.dx, p.dy);
     path.close();
+    canvas.drawPath(path, paint);
+  }
 
-    canvas.drawPath(path, fillPaint);
-
-    // Draw the outline
-    final outlinePaint = Paint()
-      ..color = outlineColor
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawPath(path, outlinePaint);
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'type': 'fillpolygon',
+      'color': color.value,
+      'strokeWidth': strokeWidth,
+      'points': points.map((p) => {'x': p.dx, 'y': p.dy}).toList(),
+    };
   }
 }
 
-class _DrawingPainter extends CustomPainter {
-  final List<DrawingElement> elements;
-  final DrawMode currentMode;
-  final Color currentColor;
-  final double currentStrokeWidth;
-  final Offset? startPoint;
-  final Offset? endPoint;
-  final List<Offset> currentPoints;
-
-  _DrawingPainter({
-    required this.elements,
-    required this.currentMode,
-    required this.currentColor,
-    required this.currentStrokeWidth,
-    required this.startPoint,
-    required this.endPoint,
-    required this.currentPoints,
-  });
+class FillCanvasDrawing extends DrawingElement {
+  FillCanvasDrawing({required Color color})
+      : super(color: color, strokeWidth: 0);
 
   @override
-  void paint(Canvas canvas, Size size) {
-    // Draw all saved elements
-    for (var element in elements) {
-      element.draw(canvas);
-    }
-
-    // Draw the current stroke being drawn
-    if (startPoint != null && endPoint != null) {
-      final paint = Paint()
-        ..color = currentMode == DrawMode.eraser ? Colors.white : currentColor
-        ..strokeWidth = currentMode == DrawMode.eraser
-            ? currentStrokeWidth * 2
-            : currentStrokeWidth
-        ..strokeCap = StrokeCap.round
-        ..style = PaintingStyle.stroke;
-
-      switch (currentMode) {
-        case DrawMode.pencil:
-        case DrawMode.eraser:
-          if (currentPoints.length >= 2) {
-            final path = Path();
-            path.moveTo(currentPoints.first.dx, currentPoints.first.dy);
-
-            for (int i = 1; i < currentPoints.length; i++) {
-              path.lineTo(currentPoints[i].dx, currentPoints[i].dy);
-            }
-
-            canvas.drawPath(path, paint);
-          }
-          break;
-        case DrawMode.line:
-          canvas.drawLine(startPoint!, endPoint!, paint);
-          break;
-        case DrawMode.rectangle:
-          canvas.drawRect(Rect.fromPoints(startPoint!, endPoint!), paint);
-          break;
-        case DrawMode.circle:
-          final center = Offset(
-            (startPoint!.dx + endPoint!.dx) / 2,
-            (startPoint!.dy + endPoint!.dy) / 2,
-          );
-          final radius = (startPoint! - endPoint!).distance / 2;
-          canvas.drawCircle(center, radius, paint);
-          break;
-        default:
-          break;
-      }
-    }
+  void draw(Canvas canvas) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+    canvas.drawPaint(paint); // covers whole surface
   }
 
   @override
-  bool shouldRepaint(_DrawingPainter oldDelegate) => true;
+  Map<String, dynamic> toJson() {
+    return {
+      'type': 'fillcanvas',
+      'color': color.value,
+      'strokeWidth': strokeWidth,
+    };
+  }
 }

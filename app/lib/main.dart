@@ -8,26 +8,29 @@ import 'firebase_options.dart';
 
 //import 'package:app/pages/home_page.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:app/pages/drawing_board_page.dart';
+import 'firebase_options.dart';
 
-void main() async {
-  // await setupLogging(); // initialize logging
-  // log.info("App started"); // log app start
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
   try {
+    // Add debug output
+    print("Initializing Firebase...");
+
+    // Try initializing with options
     await Firebase.initializeApp(
+      // You may need Firebase options here if auto-detection fails
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    // ignore: avoid_print
-    print("Firebase initialized successfully");
+
+    print("Firebase initialized successfully!");
   } catch (e) {
-    // ignore: avoid_print
     print("Error initializing Firebase: $e");
+    // Continue without Firebase for debugging
   }
 
-  runApp(const App());
+  runApp(MyApp());
 }
 
 class App extends StatefulWidget {
