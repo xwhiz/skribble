@@ -249,6 +249,15 @@ class DrawingBoardPage extends StatefulWidget {
 }
 
 class _DrawingBoardPageState extends State<DrawingBoardPage> {
+  bool _isOtherUserDrawing = false;
+  String? _activeDrawerName;
+  Timer? _otherUserActivityTimer;
+  Timer? _syncThrottleTimer;
+  bool _hasChangesToSync = false;
+  // Add at the top of your _DrawingBoardPageState class:
+  int? _lastUpdateTime;
+  bool _isSyncing = false;
+  String? _currentUserId = UniqueKey().toString(); // Simple user identification
   final List<DrawingElement> _elements = [];
   Color _selectedColor = Colors.black;
   double _strokeWidth = 4.0;
@@ -287,6 +296,7 @@ class _DrawingBoardPageState extends State<DrawingBoardPage> {
   @override
   void dispose() {
     _timer?.cancel();
+    _syncThrottleTimer?.cancel();
     _toolsController.dispose();
     super.dispose();
   }
@@ -296,6 +306,19 @@ class _DrawingBoardPageState extends State<DrawingBoardPage> {
       for (var mode in DrawMode.values) mode: _makeTool(mode),
     };
     _currentTool = _tools[_selectedMode]!;
+  }
+
+  void _throttledSync() {
+    _hasChangesToSync = true;
+
+    if (_syncThrottleTimer == null || !_syncThrottleTimer!.isActive) {
+      _syncThrottleTimer = Timer(const Duration(milliseconds: 300), () {
+        if (_hasChangesToSync) {
+          syncWithFirebase();
+          _hasChangesToSync = false;
+        }
+      });
+    }
   }
 
   // Get the full drawing state as JSON
@@ -322,23 +345,43 @@ class _DrawingBoardPageState extends State<DrawingBoardPage> {
   }
 
 // Sync drawing with Firebase
+// Sync drawing with Firebase
   void syncWithFirebase() {
+    setState(() => _isSyncing = true);
+
     try {
       final drawingData = exportDrawing();
-      // This creates/updates a document at games/game-id with a field called "drawing"
+
+      // Add user ID to identify who made this change
+      final dataToSync = {
+        'drawing': drawingData,
+        'lastEditBy': _currentUserId,
+      };
+
+      // Update local timestamp tracker
+      _lastUpdateTime = drawingData['timestamp'];
+
+      // This creates/updates a document at games/game-id with fields
       FirebaseFirestore.instance
           .collection('games')
           .doc('game-id') // Use dynamic game IDs in production
-          .set({'drawing': drawingData}, SetOptions(merge: true))
-          .then((_) => print('Drawing synced to Firebase'))
-          .catchError((e) => print('Error syncing drawing: $e'));
+          .set(dataToSync, SetOptions(merge: true))
+          .then((_) {
+        print('Drawing synced to Firebase');
+        setState(() => _isSyncing = false);
+      }).catchError((e) {
+        print('Error syncing drawing: $e');
+        setState(() => _isSyncing = false);
+      });
     } catch (e) {
       print('Error preparing drawing data: $e');
+      setState(() => _isSyncing = false);
     }
   }
 
 // Listen for updates
   void listenForUpdates() {
+    print("Starting to listen for drawing updates from Firebase");
     FirebaseFirestore.instance
         .collection('games')
         .doc('game-id') // Use dynamic game IDs in production
@@ -349,7 +392,18 @@ class _DrawingBoardPageState extends State<DrawingBoardPage> {
           final data = snapshot.data();
           if (data != null && data['drawing'] != null) {
             print('Received drawing update from Firebase');
-            importDrawing(data['drawing']);
+
+            // Check if this update is from another user
+            final timestamp = data['drawing']['timestamp'] as int;
+            final lastUpdateTime = _lastUpdateTime ?? 0;
+
+            // Only process updates that are newer than our last sync
+            if (timestamp > lastUpdateTime) {
+              setState(() {
+                importDrawing(data['drawing']);
+                _lastUpdateTime = timestamp;
+              });
+            }
           }
         }
       },
@@ -365,11 +419,11 @@ class _DrawingBoardPageState extends State<DrawingBoardPage> {
       addElement: (e) => setState(() {
         _elements.add(e);
         // Sync after each change
-        syncWithFirebase(); // <-- Add this call
+        _throttledSync(); // <-- Add this call
       }),
       fillAt: (pos) => setState(() {
         _fillShape(pos);
-        syncWithFirebase(); // <-- Add this call
+        _throttledSync(); // <-- Add this call
       }),
     );
     switch (mode) {
@@ -469,12 +523,25 @@ class _DrawingBoardPageState extends State<DrawingBoardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: // Add to your AppBar
+          AppBar(
         title: const Text('Skribbl Board'),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
         elevation: 0,
         actions: [
+          if (_isSyncing)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: SizedBox(
+                height: 16,
+                width: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                ),
+              ),
+            ),
           IconButton(icon: const Icon(Icons.undo), onPressed: _undo),
           IconButton(
               icon: const Icon(Icons.delete_outline), onPressed: _clearCanvas),
