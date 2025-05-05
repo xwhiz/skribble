@@ -5,6 +5,8 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+apply plugin: 'com.google.gms.google-services'
+
 android {
     namespace = "com.example.app"
     compileSdk = flutter.compileSdkVersion
@@ -36,9 +38,15 @@ android {
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
         }
-    }
+    }  
+
 }
 
 flutter {
     source = "../.."
+}
+
+dependencies{
+    implementation(platform("com.google.firebase:firebase-bom:33.12.0"))
+    implementation("com.google.firebase:firebase-analytics")
 }

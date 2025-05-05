@@ -21,6 +21,13 @@ The `backend/` directory contains the server-side code written in TypeScript usi
 - `models/`: Data models.
 - `utils/`: Utility functions.
 
+## Developers
+
+- Muhammad Hamza ([profile](https://github.com/xwhiz))
+- Syed Abdullah Kashif Mashhadi ([profile](https://github.com/abdullahmashhadi))
+- Haseeb Muhammad ([profile](https://github.com/Haseeb-Muhammad))
+- Aqsa Batool ([profile](https://github.com/WhizAqsa))
+
 ## Getting Started
 
 ### App
