@@ -1,7 +1,27 @@
-import 'package:app/pages/home_page.dart';
-import 'package:flutter/material.dart';
+//import 'package:app/pages/chat_interface.dart';
+import 'package:app/pages/splash_screen.dart';
 
-void main() {
+import 'firebase_options.dart';
+
+//import 'package:app/pages/home_page.dart';
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    // ignore: avoid_print
+    print("Firebase initialized successfully");
+  } catch (e) {
+    // ignore: avoid_print
+    print("Error initializing Firebase: $e");
+  }
+
   runApp(const App());
 }
 
@@ -11,11 +31,12 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       theme: ThemeData.from(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.brown),
         useMaterial3: true,
       ),
-      home: HomePage(),
+      home: SplashScreen(),
     );
   }
 }
