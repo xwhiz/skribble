@@ -249,6 +249,13 @@ class DrawingBoardPage extends StatefulWidget {
 }
 
 class _DrawingBoardPageState extends State<DrawingBoardPage> {
+  // Add these to your _DrawingBoardPageState class
+  bool _isDrawingTurn = false; // Whether it's this user's turn to draw
+  String? _currentDrawerId; // ID of the current active drawer
+  bool _isObserver = true; // By default, all users are observers
+
+// Get a random username for display purposes (in a real app, you'd use authentication)
+  final String _username = "User-${Random().nextInt(1000)}";
   bool _isOtherUserDrawing = false;
   String? _activeDrawerName;
   Timer? _otherUserActivityTimer;
@@ -283,14 +290,22 @@ class _DrawingBoardPageState extends State<DrawingBoardPage> {
       setState(() {
         if (_seconds > 0)
           _seconds--;
-        else
+        else {
           _timer?.cancel();
+          // Optionally release the drawing turn when time is up
+          if (_isDrawingTurn) {
+            _releaseDrawingTurn();
+          }
+        }
       });
     });
     _rebuildTools();
 
     // Start listening for updates from other users
     listenForUpdates();
+
+    // Setup drawing roles
+    _setupDrawingSession();
   }
 
   @override
@@ -344,9 +359,108 @@ class _DrawingBoardPageState extends State<DrawingBoardPage> {
     });
   }
 
-// Sync drawing with Firebase
+  void _setupDrawingSession() async {
+    try {
+      // First, check if there's an active drawing session
+      final docRef =
+          FirebaseFirestore.instance.collection('games').doc('game-id');
+      final docSnapshot = await docRef.get();
+
+      if (docSnapshot.exists) {
+        final data = docSnapshot.data();
+
+        if (data != null && data['currentDrawerId'] != null) {
+          // There's an active drawer
+          setState(() {
+            _currentDrawerId = data['currentDrawerId'];
+            _isDrawingTurn = _currentDrawerId == _currentUserId;
+            _isObserver = !_isDrawingTurn;
+          });
+
+          print("Current drawer is: ${data['currentDrawerName'] ?? 'Unknown'}");
+        } else {
+          // No active drawer, try to become one
+          _claimDrawingTurn();
+        }
+      } else {
+        // Document doesn't exist yet, try to become the first drawer
+        _claimDrawingTurn();
+      }
+    } catch (e) {
+      print("Error setting up drawing session: $e");
+    }
+  }
+
+// Add this to claim drawing turn
+  void _claimDrawingTurn() async {
+    try {
+      // Try to become the drawer using a transaction for atomicity
+      FirebaseFirestore.instance.runTransaction((transaction) async {
+        final docRef =
+            FirebaseFirestore.instance.collection('games').doc('game-id');
+        final snapshot = await transaction.get(docRef);
+
+        // Only claim if no one is currently drawing or if the drawer is this user
+        if (!snapshot.exists ||
+            snapshot.data()?['currentDrawerId'] == null ||
+            snapshot.data()?['currentDrawerId'] == _currentUserId) {
+          transaction.set(
+              docRef,
+              {
+                'currentDrawerId': _currentUserId,
+                'currentDrawerName': _username,
+                'turnStartedAt': DateTime.now().millisecondsSinceEpoch,
+              },
+              SetOptions(merge: true));
+
+          // Update local state
+          setState(() {
+            _currentDrawerId = _currentUserId;
+            _isDrawingTurn = true;
+            _isObserver = false;
+          });
+
+          print("Successfully claimed drawing turn");
+        } else {
+          // Someone else is drawing
+          print("Someone else is currently drawing");
+        }
+      });
+    } catch (e) {
+      print("Error claiming drawing turn: $e");
+    }
+  }
+
+// Add this to release your turn (call when user wants to end turn or leaves)
+  void _releaseDrawingTurn() async {
+    // Only the current drawer can release their turn
+    if (_currentDrawerId == _currentUserId) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('games')
+            .doc('game-id')
+            .update({'currentDrawerId': null, 'currentDrawerName': null});
+
+        setState(() {
+          _isDrawingTurn = false;
+          _isObserver = true;
+        });
+
+        print("Drawing turn released");
+      } catch (e) {
+        print("Error releasing drawing turn: $e");
+      }
+    }
+  }
+
 // Sync drawing with Firebase
   void syncWithFirebase() {
+    // Only sync if it's this user's turn to draw
+    if (!_isDrawingTurn) {
+      print("Not your turn to draw - sync canceled");
+      return;
+    }
+
     setState(() => _isSyncing = true);
 
     try {
@@ -364,7 +478,7 @@ class _DrawingBoardPageState extends State<DrawingBoardPage> {
       // This creates/updates a document at games/game-id with fields
       FirebaseFirestore.instance
           .collection('games')
-          .doc('game-id') // Use dynamic game IDs in production
+          .doc('game-id')
           .set(dataToSync, SetOptions(merge: true))
           .then((_) {
         print('Drawing synced to Firebase');
@@ -384,12 +498,24 @@ class _DrawingBoardPageState extends State<DrawingBoardPage> {
     print("Starting to listen for drawing updates from Firebase");
     FirebaseFirestore.instance
         .collection('games')
-        .doc('game-id') // Use dynamic game IDs in production
+        .doc('game-id')
         .snapshots()
         .listen(
       (snapshot) {
         if (snapshot.exists) {
           final data = snapshot.data();
+
+          // Update drawer information
+          if (data != null && data['currentDrawerId'] != null) {
+            setState(() {
+              _currentDrawerId = data['currentDrawerId'];
+              _activeDrawerName = data['currentDrawerName'] ?? 'Unknown';
+              _isDrawingTurn = _currentDrawerId == _currentUserId;
+              _isObserver = !_isDrawingTurn;
+            });
+          }
+
+          // Handle drawing updates
           if (data != null && data['drawing'] != null) {
             print('Received drawing update from Firebase');
 
@@ -542,9 +668,19 @@ class _DrawingBoardPageState extends State<DrawingBoardPage> {
                 ),
               ),
             ),
-          IconButton(icon: const Icon(Icons.undo), onPressed: _undo),
+          // Turn management button - only show to the current drawer
+          if (_isDrawingTurn)
+            IconButton(
+              icon: Icon(Icons.switch_account),
+              tooltip: "End your turn",
+              onPressed: _releaseDrawingTurn,
+            ),
           IconButton(
-              icon: const Icon(Icons.delete_outline), onPressed: _clearCanvas),
+              icon: const Icon(Icons.undo),
+              onPressed: _isDrawingTurn ? _undo : null),
+          IconButton(
+              icon: const Icon(Icons.delete_outline),
+              onPressed: _isDrawingTurn ? _clearCanvas : null),
         ],
       ),
       body: Stack(children: [
@@ -575,22 +711,58 @@ class _DrawingBoardPageState extends State<DrawingBoardPage> {
           ]),
         ),
 
+        // Add this inside your Stack in the build method, below the top bar
+        if (_currentDrawerId != null)
+          Positioned(
+            top: 50, // Position below the word
+            left: 0,
+            right: 0,
+            child: Container(
+              color: _isDrawingTurn
+                  ? Colors.green.withOpacity(0.2)
+                  : Colors.blue.withOpacity(0.1),
+              padding: EdgeInsets.symmetric(vertical: 8.0),
+              child: Center(
+                child: Text(
+                  _isDrawingTurn
+                      ? "It's your turn to draw!"
+                      : "${_activeDrawerName ?? 'Someone'} is drawing...",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: _isDrawingTurn
+                        ? Colors.green.shade800
+                        : Colors.blue.shade800,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
         // Canvas
         Builder(builder: (ctx) {
           return GestureDetector(
-            onPanStart: (d) {
-              final box = ctx.findRenderObject() as RenderBox;
-              _currentTool.onPanStart(box.globalToLocal(d.globalPosition));
-              setState(() {});
-            },
-            onPanUpdate: (d) {
-              final box = ctx.findRenderObject() as RenderBox;
-              _currentTool.onPanUpdate(box.globalToLocal(d.globalPosition));
-              setState(() {});
-            },
-            onPanEnd: (_) {
-              _currentTool.onPanEnd();
-            },
+            // Only respond to gestures if it's the user's turn to draw
+            onPanStart: _isDrawingTurn
+                ? (d) {
+                    final box = ctx.findRenderObject() as RenderBox;
+                    _currentTool
+                        .onPanStart(box.globalToLocal(d.globalPosition));
+                    setState(() {});
+                  }
+                : null,
+            onPanUpdate: _isDrawingTurn
+                ? (d) {
+                    final box = ctx.findRenderObject() as RenderBox;
+                    _currentTool
+                        .onPanUpdate(box.globalToLocal(d.globalPosition));
+                    setState(() {});
+                  }
+                : null,
+            onPanEnd: _isDrawingTurn
+                ? (_) {
+                    _currentTool.onPanEnd();
+                  }
+                : null,
             child: CustomPaint(
               size: Size.infinite,
               painter: _DrawingPainter(
@@ -601,135 +773,162 @@ class _DrawingBoardPageState extends State<DrawingBoardPage> {
           );
         }),
 
+        // Add this below the canvas in your Stack
+        if (_currentDrawerId == null)
+          Align(
+            alignment: Alignment.center,
+            child: ElevatedButton(
+              onPressed: _claimDrawingTurn,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: Text(
+                "Take your turn to draw!",
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+          ),
+
         // Bottom tools panel
         Positioned(
           bottom: 0,
           left: 0,
           right: 0,
-          child: Container(
-            height: 140,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8)],
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(16)),
-            ),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              SizedBox(
-                height: 50,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  controller: _toolsController,
-                  children: DrawMode.values.map((mode) {
-                    final icon = {
-                      DrawMode.pencil: Icons.brush,
-                      DrawMode.line: Icons.show_chart,
-                      DrawMode.rectangle: Icons.crop_square,
-                      DrawMode.circle: Icons.circle_outlined,
-                      DrawMode.fill: Icons.format_color_fill,
-                      DrawMode.eraser: Icons.auto_fix_normal,
-                    }[mode]!;
-                    final sel = _selectedMode == mode;
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: GestureDetector(
-                        onTap: () => _selectTool(mode),
-                        child: Container(
-                          width: 45,
-                          height: 45,
-                          decoration: BoxDecoration(
-                            color: sel ? Colors.blue.withOpacity(0.2) : null,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
+          child: Opacity(
+            opacity: _isDrawingTurn ? 1.0 : 0.5, // Fade out when not the drawer
+            child: IgnorePointer(
+              ignoring:
+                  !_isDrawingTurn, // Disable interactions when not the drawer
+              child: Container(
+                height: 140,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8)],
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(16)),
+                ),
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  SizedBox(
+                    height: 50,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      controller: _toolsController,
+                      children: DrawMode.values.map((mode) {
+                        final icon = {
+                          DrawMode.pencil: Icons.brush,
+                          DrawMode.line: Icons.show_chart,
+                          DrawMode.rectangle: Icons.crop_square,
+                          DrawMode.circle: Icons.circle_outlined,
+                          DrawMode.fill: Icons.format_color_fill,
+                          DrawMode.eraser: Icons.auto_fix_normal,
+                        }[mode]!;
+                        final sel = _selectedMode == mode;
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: GestureDetector(
+                            onTap: () => _selectTool(mode),
+                            child: Container(
+                              width: 45,
+                              height: 45,
+                              decoration: BoxDecoration(
                                 color:
-                                    sel ? Colors.blue : Colors.grey.shade300),
-                          ),
-                          child: Icon(icon,
-                              color: sel ? Colors.blue : Colors.black54),
-                        ),
-                      ),
-                    );
-                  }).toList()
-                    ..addAll([
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: const SizedBox(width: 8),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Container(
-                          width: 150,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Row(children: [
-                            const Icon(Icons.line_weight, size: 16),
-                            Expanded(
-                              child: Slider(
-                                min: 1,
-                                max: 20,
-                                value: _strokeWidth,
-                                activeColor: _selectedColor,
-                                onChanged: (v) => setState(() {
-                                  _strokeWidth = v;
-                                  _rebuildTools();
-                                }),
+                                    sel ? Colors.blue.withOpacity(0.2) : null,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                    color: sel
+                                        ? Colors.blue
+                                        : Colors.grey.shade300),
                               ),
+                              child: Icon(icon,
+                                  color: sel ? Colors.blue : Colors.black54),
                             ),
-                          ]),
-                        ),
-                      ),
-                    ]),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: [
-                    Colors.black,
-                    Colors.white,
-                    Colors.red,
-                    Colors.blue,
-                    Colors.green,
-                    Colors.yellow,
-                    Colors.orange,
-                    Colors.purple,
-                    Colors.pink,
-                    Colors.brown,
-                    Colors.teal,
-                    Colors.indigo,
-                  ].map((c) {
-                    final sel = c == _selectedColor;
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: GestureDetector(
-                        onTap: () => setState(() {
-                          _selectedColor = c;
-                          _rebuildTools();
-                        }),
-                        child: Container(
-                          width: 30,
-                          height: 30,
-                          decoration: BoxDecoration(
-                            color: c,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                                color: Colors.black26, width: sel ? 2 : 1),
                           ),
-                          child: sel
-                              ? Icon(Icons.check,
-                                  size: 16,
-                                  color: c.computeLuminance() > 0.5
-                                      ? Colors.black
-                                      : Colors.white)
-                              : null,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
+                        );
+                      }).toList()
+                        ..addAll([
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: const SizedBox(width: 8),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Container(
+                              width: 150,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8),
+                              child: Row(children: [
+                                const Icon(Icons.line_weight, size: 16),
+                                Expanded(
+                                  child: Slider(
+                                    min: 1,
+                                    max: 20,
+                                    value: _strokeWidth,
+                                    activeColor: _selectedColor,
+                                    onChanged: (v) => setState(() {
+                                      _strokeWidth = v;
+                                      _rebuildTools();
+                                    }),
+                                  ),
+                                ),
+                              ]),
+                            ),
+                          ),
+                        ]),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: [
+                        Colors.black,
+                        Colors.white,
+                        Colors.red,
+                        Colors.blue,
+                        Colors.green,
+                        Colors.yellow,
+                        Colors.orange,
+                        Colors.purple,
+                        Colors.pink,
+                        Colors.brown,
+                        Colors.teal,
+                        Colors.indigo,
+                      ].map((c) {
+                        final sel = c == _selectedColor;
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: GestureDetector(
+                            onTap: () => setState(() {
+                              _selectedColor = c;
+                              _rebuildTools();
+                            }),
+                            child: Container(
+                              width: 30,
+                              height: 30,
+                              decoration: BoxDecoration(
+                                color: c,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                    color: Colors.black26, width: sel ? 2 : 1),
+                              ),
+                              child: sel
+                                  ? Icon(Icons.check,
+                                      size: 16,
+                                      color: c.computeLuminance() > 0.5
+                                          ? Colors.black
+                                          : Colors.white)
+                                  : null,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ]),
               ),
-            ]),
+            ),
           ),
         ),
       ]),
