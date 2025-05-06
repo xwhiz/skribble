@@ -5,6 +5,7 @@ import 'package:app/pages/exisitng_rooms.dart';
 import 'package:app/pages/game_layout.dart';
 import 'package:app/pages/join_private_room.dart';
 import 'package:flutter/material.dart';
+import 'package:app/viewmodels/matchmaking_view_model.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});

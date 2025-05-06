@@ -50,10 +50,9 @@ class FirestoreService {
     Map<String, dynamic> roomData = {
       'roomCode': roomCode,
       'createdAt': FieldValue.serverTimestamp(),
-      'isActive': true,
       'currentPlayers': 1,
       'maxPlayers': maxPlayersPerRoom,
-      'status': 'waiting', // waiting, playing, ended
+      'status': 'notFull', // full, notFUll
       'players': [
         {
           'uid': currentUser.uid,
@@ -62,8 +61,6 @@ class FirestoreService {
           'joinedAt': FieldValue.serverTimestamp()
         }
       ],
-      'currentRound': 0,
-      'totalRounds': 3,
     };
 
     DocumentReference roomRef = await _roomsCollection.add(roomData);
@@ -80,8 +77,7 @@ class FirestoreService {
   
     // Find Available Room with Space
     QuerySnapshot availableRooms = await _roomsCollection
-      .where('isActive', isEqualTo: true)
-      .where('status', isEqualTo: 'waiting')
+      .where('status', isEqualTo: 'notFull')
       .where('currentPlayers', isLessThan: maxPlayersPerRoom)
       .orderBy('currentPlayers', descending: true)
       .limit(1)
@@ -107,13 +103,13 @@ class FirestoreService {
       await roomRef.update({
         'currentPlayers': FieldValue.increment(1),
         'players': players,
-        'status': roomFull ? 'playing' : 'waiting',
+        'status': roomFull ? 'full' : 'notFull',
       });
       
       return {
         'roomId': roomRef.id,
         'isNewRoom': false,
-        'status': players.length >= maxPlayersPerRoom ? 'playing' : 'waiting',
+        'status': players.length >= maxPlayersPerRoom ? 'full' : 'notFull',
       };
     } else {
       // Create new room since none are available
@@ -121,7 +117,7 @@ class FirestoreService {
       return {
         'roomId': roomId,
         'isNewRoom': true,
-        'status': 'waiting',
+        'status': 'notFull',
       };
     }
   }
@@ -154,7 +150,7 @@ class FirestoreService {
       await roomRef.update({
         'currentPlayers': FieldValue.increment(-1),
         'players': players,
-        'status': 'waiting',
+        'status': 'notFull',
       });
     }
   }
@@ -174,28 +170,6 @@ class FirestoreService {
       Iterable.generate(6, (_) => chars.codeUnitAt(rnd.nextInt(chars.length)))
     );
   }
-
-
-    // Start game if room is full
-  Future<void> checkAndStartGameIfRoomFull(String roomId) async {
-    DocumentReference roomRef = _roomsCollection.doc(roomId);
-    DocumentSnapshot roomSnap = await roomRef.get();
-    
-    if (!roomSnap.exists) {
-      throw Exception('Room not found');
-    }
-    
-    Map<String, dynamic> roomData = roomSnap.data() as Map<String, dynamic>;
-    int currentPlayers = roomData['currentPlayers'] ?? 0;
-    
-    // If room is full, start the game
-    if (currentPlayers >= maxPlayersPerRoom) {
-      await roomRef.update({
-        'status': 'playing',
-      });
-    }
-  }
-
    
 }
 
