@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+
+
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
@@ -26,4 +28,17 @@ class FirestoreService {
         .orderBy('timestamp', descending: true)
         .snapshots();
   }
+
+  //Creating a Room
+  Future<void> createRoom(String creator) async {
+    try {
+      await _db.collection('Room').add({
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      // ignore: avoid_print
+      print('Error creating room: $e');
+    }
+  }
 }
+
