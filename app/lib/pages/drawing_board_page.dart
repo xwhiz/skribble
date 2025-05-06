@@ -649,13 +649,13 @@ class _DrawingBoardPageState extends State<DrawingBoardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: // Add to your AppBar
-          AppBar(
+      appBar: AppBar(
         title: const Text('Skribbl Board'),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
         elevation: 0,
         actions: [
+          // Show sync indicator to everyone
           if (_isSyncing)
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -668,19 +668,53 @@ class _DrawingBoardPageState extends State<DrawingBoardPage> {
                 ),
               ),
             ),
-          // Turn management button - only show to the current drawer
-          if (_isDrawingTurn)
+
+          // Only show drawing controls to the active drawer
+          if (_isDrawingTurn) ...[
             IconButton(
               icon: Icon(Icons.switch_account),
               tooltip: "End your turn",
               onPressed: _releaseDrawingTurn,
             ),
-          IconButton(
+            IconButton(
               icon: const Icon(Icons.undo),
-              onPressed: _isDrawingTurn ? _undo : null),
-          IconButton(
+              onPressed: _undo,
+            ),
+            IconButton(
               icon: const Icon(Icons.delete_outline),
-              onPressed: _isDrawingTurn ? _clearCanvas : null),
+              onPressed: _clearCanvas,
+            ),
+          ],
+
+          // All users can see the info button
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: Text('Game Information'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Your username: $_username'),
+                      SizedBox(height: 8),
+                      Text('Current drawer: ${_activeDrawerName ?? "Nobody"}'),
+                      SizedBox(height: 8),
+                      Text('Time remaining: $_timerText'),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text('Close'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ],
       ),
       body: Stack(children: [
@@ -790,147 +824,169 @@ class _DrawingBoardPageState extends State<DrawingBoardPage> {
             ),
           ),
 
-        // Bottom tools panel
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          child: Opacity(
-            opacity: _isDrawingTurn ? 1.0 : 0.5, // Fade out when not the drawer
-            child: IgnorePointer(
-              ignoring:
-                  !_isDrawingTurn, // Disable interactions when not the drawer
-              child: Container(
-                height: 140,
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8)],
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(16)),
-                ),
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  SizedBox(
-                    height: 50,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      controller: _toolsController,
-                      children: DrawMode.values.map((mode) {
-                        final icon = {
-                          DrawMode.pencil: Icons.brush,
-                          DrawMode.line: Icons.show_chart,
-                          DrawMode.rectangle: Icons.crop_square,
-                          DrawMode.circle: Icons.circle_outlined,
-                          DrawMode.fill: Icons.format_color_fill,
-                          DrawMode.eraser: Icons.auto_fix_normal,
-                        }[mode]!;
-                        final sel = _selectedMode == mode;
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: GestureDetector(
-                            onTap: () => _selectTool(mode),
-                            child: Container(
-                              width: 45,
-                              height: 45,
-                              decoration: BoxDecoration(
-                                color:
-                                    sel ? Colors.blue.withOpacity(0.2) : null,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                    color: sel
-                                        ? Colors.blue
-                                        : Colors.grey.shade300),
-                              ),
-                              child: Icon(icon,
-                                  color: sel ? Colors.blue : Colors.black54),
+        // Bottom tools panel - Only show to the active drawer
+        if (_isDrawingTurn)
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 140,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8)],
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                SizedBox(
+                  height: 50,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    controller: _toolsController,
+                    children: DrawMode.values.map((mode) {
+                      final icon = {
+                        DrawMode.pencil: Icons.brush,
+                        DrawMode.line: Icons.show_chart,
+                        DrawMode.rectangle: Icons.crop_square,
+                        DrawMode.circle: Icons.circle_outlined,
+                        DrawMode.fill: Icons.format_color_fill,
+                        DrawMode.eraser: Icons.auto_fix_normal,
+                      }[mode]!;
+                      final sel = _selectedMode == mode;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: GestureDetector(
+                          onTap: () => _selectTool(mode),
+                          child: Container(
+                            width: 45,
+                            height: 45,
+                            decoration: BoxDecoration(
+                              color: sel ? Colors.blue.withOpacity(0.2) : null,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                  color:
+                                      sel ? Colors.blue : Colors.grey.shade300),
                             ),
+                            child: Icon(icon,
+                                color: sel ? Colors.blue : Colors.black54),
                           ),
-                        );
-                      }).toList()
-                        ..addAll([
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: const SizedBox(width: 8),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: Container(
-                              width: 150,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
-                              child: Row(children: [
-                                const Icon(Icons.line_weight, size: 16),
-                                Expanded(
-                                  child: Slider(
-                                    min: 1,
-                                    max: 20,
-                                    value: _strokeWidth,
-                                    activeColor: _selectedColor,
-                                    onChanged: (v) => setState(() {
-                                      _strokeWidth = v;
-                                      _rebuildTools();
-                                    }),
-                                  ),
+                        ),
+                      );
+                    }).toList()
+                      ..addAll([
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: const SizedBox(width: 8),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Container(
+                            width: 150,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Row(children: [
+                              const Icon(Icons.line_weight, size: 16),
+                              Expanded(
+                                child: Slider(
+                                  min: 1,
+                                  max: 20,
+                                  value: _strokeWidth,
+                                  activeColor: _selectedColor,
+                                  onChanged: (v) => setState(() {
+                                    _strokeWidth = v;
+                                    _rebuildTools();
+                                  }),
                                 ),
-                              ]),
-                            ),
-                          ),
-                        ]),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Expanded(
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      children: [
-                        Colors.black,
-                        Colors.white,
-                        Colors.red,
-                        Colors.blue,
-                        Colors.green,
-                        Colors.yellow,
-                        Colors.orange,
-                        Colors.purple,
-                        Colors.pink,
-                        Colors.brown,
-                        Colors.teal,
-                        Colors.indigo,
-                      ].map((c) {
-                        final sel = c == _selectedColor;
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: GestureDetector(
-                            onTap: () => setState(() {
-                              _selectedColor = c;
-                              _rebuildTools();
-                            }),
-                            child: Container(
-                              width: 30,
-                              height: 30,
-                              decoration: BoxDecoration(
-                                color: c,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                    color: Colors.black26, width: sel ? 2 : 1),
                               ),
-                              child: sel
-                                  ? Icon(Icons.check,
-                                      size: 16,
-                                      color: c.computeLuminance() > 0.5
-                                          ? Colors.black
-                                          : Colors.white)
-                                  : null,
-                            ),
+                            ]),
                           ),
-                        );
-                      }).toList(),
+                        ),
+                      ]),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      Colors.black,
+                      Colors.white,
+                      Colors.red,
+                      Colors.blue,
+                      Colors.green,
+                      Colors.yellow,
+                      Colors.orange,
+                      Colors.purple,
+                      Colors.pink,
+                      Colors.brown,
+                      Colors.teal,
+                      Colors.indigo,
+                    ].map((c) {
+                      final sel = c == _selectedColor;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: GestureDetector(
+                          onTap: () => setState(() {
+                            _selectedColor = c;
+                            _rebuildTools();
+                          }),
+                          child: Container(
+                            width: 30,
+                            height: 30,
+                            decoration: BoxDecoration(
+                              color: c,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                  color: Colors.black26, width: sel ? 2 : 1),
+                            ),
+                            child: sel
+                                ? Icon(Icons.check,
+                                    size: 16,
+                                    color: c.computeLuminance() > 0.5
+                                        ? Colors.black
+                                        : Colors.white)
+                                : null,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ]),
+            ),
+          ),
+
+        // For non-drawing users, add a status indicator at the bottom
+        if (!_isDrawingTurn)
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8)],
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.visibility, size: 18, color: Colors.blue.shade700),
+                  const SizedBox(width: 8),
+                  Text(
+                    "You are in observer mode",
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color: Colors.blue.shade700,
                     ),
                   ),
-                ]),
+                ],
               ),
             ),
           ),
-        ),
       ]),
     );
   }
