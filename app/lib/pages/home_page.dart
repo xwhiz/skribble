@@ -52,13 +52,27 @@ class HomePage extends StatelessWidget {
                     children: [
                       ElevatedButton(
                         onPressed: () {
-                          Navigator.push(
-                            // ignore: use_build_context_synchronously
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const GameLayout(),
-                            ),
-                          );
+                          viewModel.isLoading
+                            ? null // Disable button while loading
+                            : () async {
+                                await viewModel.joinRoom();
+                                
+                                // Check if joining was successful
+                                if (viewModel.room != null && viewModel.error == null) {
+                                  Navigator.push(
+                                    // ignore: use_build_context_synchronously
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const GameLayout(),
+                                    ),
+                                  );
+                                } else if (viewModel.error != null) {
+                                  // Show error message
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(viewModel.error!)),
+                                  );
+                                }
+                              };
                         },
                         style: ElevatedButton.styleFrom(
                           // ignore: deprecated_member_use
