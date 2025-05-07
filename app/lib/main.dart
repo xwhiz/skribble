@@ -1,5 +1,8 @@
 //import 'package:app/pages/chat_interface.dart';
 import 'package:app/pages/splash_screen.dart';
+import 'package:app/viewmodels/matchmaking_view_model.dart';
+import 'package:provider/provider.dart';
+import 'package:app/services/firestore_service.dart';
 
 import 'firebase_options.dart';
 
@@ -30,13 +33,22 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData.from(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.brown),
-        useMaterial3: true,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (context) => MatchmakingViewModel(
+            FirestoreService(),
+          ),
+          ),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData.from(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.brown),
+          useMaterial3: true,
+        ),
+        home: SplashScreen(),
       ),
-      home: SplashScreen(),
     );
   }
 }

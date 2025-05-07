@@ -1,33 +1,22 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class PlayerModel {
-  final String uid;
-  final String displayName;
-  final int score;
-  final Timestamp joinedAt;
+  final String userId;
+  final String? username;
+  final int? score;
+  final bool? isDrawing;
 
   PlayerModel({
-    required this.uid,
-    required this.displayName,
-    required this.score,
-    required this.joinedAt,
+    required this.userId,
+    this.username,
+    this.score,
+    this.isDrawing,
   });
 
   factory PlayerModel.fromJson(Map<String, dynamic> json) {
     return PlayerModel(
-      uid: json['uid'] ?? '',
-      displayName: json['displayName'] ?? 'Player',
-      score: json['score'] ?? 0,
-      joinedAt: json['joinedAt'] ?? Timestamp.now(),
+      userId: json['userId'] ?? '',
+      username: json['username'],
+      score: json['score'],
+      isDrawing: json['isDrawing'] ?? false,
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'uid': uid,
-      'displayName': displayName,
-      'score': score,
-      'joinedAt': joinedAt,
-    };
   }
 }

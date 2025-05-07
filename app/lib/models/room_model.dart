@@ -3,42 +3,55 @@ import 'player_model.dart';
 
 class RoomModel {
   final String roomCode;
-  final Timestamp createdAt;
-  final int currentPlayers;
-  final int maxPlayers;
-  final String status;
-  final List<PlayerModel> players;
+  final String status; // 'waiting', 'playing', 'ended'
+  final int? maxPlayers;
+  final int? currentPlayers;
+  final int? currentRound;
+  final int? totalRounds;
+  final String? currentDrawerId;
+  final String? currentWord;
+  final String? hint;
+  final String? hiddenWord; // Word with dashes for players to guess
+  final String? timeLeft; // Formatted time left "01:25"
+  final List<PlayerModel>? players;
 
   RoomModel({
     required this.roomCode,
-    required this.createdAt,
-    required this.currentPlayers,
-    required this.maxPlayers,
     required this.status,
-    required this.players,
+    this.maxPlayers,
+    this.currentPlayers,
+    this.currentRound,
+    this.totalRounds,
+    this.currentDrawerId,
+    this.currentWord,
+    this.hint,
+    this.hiddenWord,
+    this.timeLeft,
+    this.players,
   });
 
   factory RoomModel.fromJson(Map<String, dynamic> json) {
+    // Parse players list if it exists
+    List<PlayerModel>? playersList;
+    if (json['players'] != null) {
+      playersList = (json['players'] as List)
+          .map((playerJson) => PlayerModel.fromJson(playerJson))
+          .toList();
+    }
+
     return RoomModel(
       roomCode: json['roomCode'] ?? '',
-      createdAt: json['createdAt'] ?? Timestamp.now(),
-      currentPlayers: json['currentPlayers'] ?? 0,
-      maxPlayers: json['maxPlayers'] ?? 8,
-      status: json['status'] ?? 'notFull',
-      players: (json['players'] as List<dynamic>? ?? [])
-          .map((playerData) => PlayerModel.fromJson(playerData as Map<String, dynamic>))
-          .toList(),
+      status: json['status'] ?? 'waiting',
+      maxPlayers: json['maxPlayers'],
+      currentPlayers: json['currentPlayers'],
+      currentRound: json['currentRound'],
+      totalRounds: json['totalRounds'],
+      currentDrawerId: json['currentDrawerId'],
+      currentWord: json['currentWord'],
+      hint: json['hint'],
+      hiddenWord: json['hiddenWord'],
+      timeLeft: json['timeLeft'],
+      players: playersList,
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'roomCode': roomCode,
-      'createdAt': createdAt,
-      'currentPlayers': currentPlayers,
-      'maxPlayers': maxPlayers,
-      'status': status,
-      'players': players.map((player) => player.toJson()).toList(),
-    };
   }
 }

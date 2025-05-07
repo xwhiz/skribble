@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:provider/provider.dart';
 import 'package:app/pages/create_room.dart';
 import 'package:app/pages/exisitng_rooms.dart';
 import 'package:app/pages/game_layout.dart';
@@ -12,6 +13,10 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+    //Access the ViewModel
+    final viewModel = Provider.of<MatchmakingViewModel>(context);
+
     return Scaffold(
       body: Container(
         width: double.infinity,
