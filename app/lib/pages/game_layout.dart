@@ -10,7 +10,7 @@ class GameLayout extends StatelessWidget {
   Widget build(BuildContext context) {
 
     final viewModel = Provider.of<MatchmakingViewModel>(context);
-
+    print("joined room with room id: ${viewModel.room?.roomCode}");
 
     return Scaffold(
       body: SafeArea(

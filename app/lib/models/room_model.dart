@@ -14,8 +14,9 @@ class RoomModel {
   final String? hiddenWord; // Word with dashes for players to guess
   final String? timeLeft; // Formatted time left "01:25"
   final bool? isPrivate;
-  final int? roundDuration;
   final List<PlayerModel>? players;
+  final int? roundDuration;
+  final Timestamp? createAt;
 
   RoomModel({
     required this.roomCode,
@@ -30,8 +31,9 @@ class RoomModel {
     this.hiddenWord,
     this.timeLeft,
     this.isPrivate,
-    this.roundDuration,
     this.players,
+    this.roundDuration,
+    this.createAt
   });
 
   factory RoomModel.fromJson(Map<String, dynamic> json) {
@@ -56,8 +58,12 @@ class RoomModel {
       hiddenWord: json['hiddenWord'],
       timeLeft: json['timeLeft'],
       isPrivate: json['isPrivate'] ?? false,
-      roundDuration: json['roundDuration'],
       players: playersList,
+      roundDuration: json['roundDuration'],
+      createAt: json['createAt'] != null
+          ? (json['createAt'] as Timestamp)
+          : null,
     );
   }
+
 }

@@ -1,7 +1,9 @@
 import 'dart:ui';
 
 import 'package:app/pages/game_layout.dart';
+import 'package:app/viewmodels/matchmaking_view_model.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 enum RoomType { private, public }
 
@@ -24,6 +26,8 @@ class _CreateRoomState extends State<CreateRoom> {
   TextEditingController roundDurationController = TextEditingController();
   @override
   Widget build(BuildContext context) {
+    final viewModel = Provider.of<MatchmakingViewModel>(context);
+
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -285,6 +289,10 @@ class _CreateRoomState extends State<CreateRoom> {
                       const SizedBox(height: 20),
                       ElevatedButton(
                         onPressed: () {
+                          viewModel.createRoom(
+                            maxPlayers : int.parse(maxPlayerController.text),
+                            roundDuration : int.parse(roundDurationController.text),
+                          );
                           Navigator.push(
                             context,
                             MaterialPageRoute(

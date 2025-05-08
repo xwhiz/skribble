@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/room_model.dart';
 import '../services/firestore_service.dart';
+import 'package:app/data/constants.dart';
+
 
 class MatchmakingViewModel extends ChangeNotifier {
   final FirestoreService _firestoreService;
@@ -18,13 +20,34 @@ class MatchmakingViewModel extends ChangeNotifier {
 
   Stream<DocumentSnapshot>? _roomStream;
 
-  Future<void> joinRoom() async {
+  Future<void> createRoom({bool isPrivate = true, int maxPlayers=K.maxPlayers, int totalRounds=K.totalRounds, int roundDuration=K.roundDuration}) async {
     _setLoading(true);
     _error = null;
-    print("Joining room...");
 
     try {
-      final result = await _firestoreService.joinRoom();
+      final result = await _firestoreService.createRoom(isPrivate: true, );
+      final roomDoc = await FirebaseFirestore.instance
+          .collection('Room')
+          .doc(result)
+          .get();
+
+      _room = RoomModel.fromJson(roomDoc.data()!);
+      _subscribeToRoom(result);
+    } catch (e) {
+      _error = 'Failed to create room: $e';
+      print(_error);
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> joinPublicRoom() async {
+    _setLoading(true);
+    _error = null;
+    // print("Joining room...");
+
+    try {
+      final result = await _firestoreService.joinPublicRoom();
       final roomDoc = await FirebaseFirestore.instance
           .collection('Room')
           .doc(result['roomId'])
@@ -32,6 +55,31 @@ class MatchmakingViewModel extends ChangeNotifier {
 
       _room = RoomModel.fromJson(roomDoc.data()!);
       _subscribeToRoom(result['roomId']);
+    } catch (e) {
+      _error = 'Failed to join room: $e';
+      print(_error);
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> joinPrivateRoom(String roomCode) async {
+    _setLoading(true);
+    _error = null;
+
+    try {
+      final result = await _firestoreService.joinPrivateRoom(roomCode);
+      if (result == true) {
+        final roomDoc = await FirebaseFirestore.instance
+            .collection('Room')
+            .doc(roomCode)
+            .get();
+
+        _room = RoomModel.fromJson(roomDoc.data()!);
+        _subscribeToRoom(roomCode);
+      } else {
+        _error = 'Failed to join private room:';
+      }
     } catch (e) {
       _error = 'Failed to join room: $e';
       print(_error);

@@ -1,5 +1,7 @@
 class K {
-  static String appName = "Skribble";
+  static  String appName = "Skribble";
   static String welcomeString = "Welcome to Skribble";
-  static int maxPlayers = 8;
+  static const int maxPlayers = 8;
+  static const int roundDuration = 60; // in seconds
+  static const int totalRounds = 3;
 }
