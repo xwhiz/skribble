@@ -56,7 +56,6 @@ class FirestoreService {
         //   print('Stack trace: $stack');
         // }
             // print(availableRooms);
-
         String roomId;
         bool isNewRoom = false;
 
@@ -69,7 +68,7 @@ class FirestoreService {
           // Get the current data
           DocumentSnapshot roomSnapshot = await transaction.get(roomRef);
           Map<String, dynamic> roomData = roomSnapshot.data() as Map<String, dynamic>;
-
+        
           // Update player count
           transaction.update(roomRef, {
             'currentPlayers': roomData['currentPlayers'] + 1,
@@ -109,7 +108,7 @@ class FirestoreService {
               {
                 'userId': currentUser.uid,
                 'username': currentUser.displayName ?? 'Anonymous',
-                'joinedAt': DateTime.now(),
+                'joinedAt': Timestamp.now(),
                 'score': 0,
                 'isDrawing': false,
               }
