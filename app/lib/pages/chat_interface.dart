@@ -1,11 +1,14 @@
 import 'dart:ui';
+import 'package:app/viewmodels/chat_view_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:app/services/firestore_service.dart';
 
 class ChatInterface extends StatefulWidget {
-  const ChatInterface({super.key});
+  final String roomId;
+
+  const ChatInterface({super.key, required this.roomId});
 
   @override
   // ignore: library_private_types_in_public_api
@@ -18,12 +21,14 @@ class _ChatInterfaceState extends State<ChatInterface> {
   final FirestoreService firestoreService = FirestoreService();
 
   late Timestamp loginTimestamp;
+  late ChatViewModel chatViewModel;
   bool isSendingButton = false; // Track sending status for button
 
   @override
   void initState() {
     super.initState();
     loginTimestamp = Timestamp.now();
+    chatViewModel = ChatViewModel(roomId: widget.roomId);
   }
 
   Future<void> sendMessage() async {
@@ -39,7 +44,7 @@ class _ChatInterfaceState extends State<ChatInterface> {
       messageController.clear();
 
       try {
-        await firestoreService.sendMessage(userName, message);
+        await chatViewModel.sendMessage(message);
       } catch (e) {
         // ignore: avoid_print
         print('Failed to send message: $e');
