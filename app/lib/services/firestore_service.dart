@@ -37,7 +37,7 @@ class FirestoreService {
     if (currentUser == null) {
       throw Exception('User not authenticated');
     }
-
+    print("Joining public room...");
     return _db.runTransaction<Map<String, dynamic>>(
       (transaction) async {
           var availableRooms = await _db
@@ -47,16 +47,15 @@ class FirestoreService {
               .where('currentPlayers', isLessThan: K.maxPlayers)
               .orderBy('currentPlayers', descending: true)
               .limit(1)
-              .get();
+              .get();  
           print('Available rooms: ${availableRooms.docs.length}');
-          
         String roomId;
         bool isNewRoom = false;
 
 
         // Join an existing room
         if (availableRooms.docs.isNotEmpty) {
-          // print('Joining existing room');
+          print('Joining existing room');
           roomId = availableRooms.docs[0].id;
           DocumentReference roomRef = _db.collection('Room').doc(roomId);
 
@@ -77,7 +76,7 @@ class FirestoreService {
           });
 
         } else {  
-          // print("No available rooms, created a new one");
+          print("No available rooms, created a new one");
           roomId = await createRoom();
         }
 

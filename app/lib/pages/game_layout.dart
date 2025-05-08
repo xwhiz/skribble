@@ -9,8 +9,8 @@ class GameLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
 
-    final viewModel = Provider.of<MatchmakingViewModel>(context);
-    print("joined room with room id: ${viewModel.room?.roomCode}");
+    final matchMakingViewModel = Provider.of<MatchmakingViewModel>(context);
+    print("joined room with room id: ${matchMakingViewModel.room?.roomCode}");
 
     return Scaffold(
       body: SafeArea(

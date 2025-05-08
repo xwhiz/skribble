@@ -48,11 +48,12 @@ class MatchmakingViewModel extends ChangeNotifier {
 
     try {
       final result = await _firestoreService.joinPublicRoom();
+      print("result: $result");
       final roomDoc = await FirebaseFirestore.instance
           .collection('Room')
           .doc(result['roomId'])
           .get();
-
+      print("roomDoc: $roomDoc");
       _room = RoomModel.fromJson(roomDoc.data()!);
       _subscribeToRoom(result['roomId']);
     } catch (e) {

@@ -26,7 +26,7 @@ class _CreateRoomState extends State<CreateRoom> {
   TextEditingController roundDurationController = TextEditingController();
   @override
   Widget build(BuildContext context) {
-    final viewModel = Provider.of<MatchmakingViewModel>(context);
+    final matchMakingViewModel = Provider.of<MatchmakingViewModel>(context);
 
     return Scaffold(
       body: Container(
@@ -289,7 +289,7 @@ class _CreateRoomState extends State<CreateRoom> {
                       const SizedBox(height: 20),
                       ElevatedButton(
                         onPressed: () {
-                          viewModel.createRoom(
+                          matchMakingViewModel.createRoom(
                             maxPlayers : int.parse(maxPlayerController.text),
                             roundDuration : int.parse(roundDurationController.text),
                           );

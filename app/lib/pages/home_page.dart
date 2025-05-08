@@ -16,7 +16,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
 
     //Access the ViewModel
-    final viewModel = Provider.of<MatchmakingViewModel>(context);
+    final matchMakingViewModel = Provider.of<MatchmakingViewModel>(context);
 
     return Scaffold(
       body: Container(
@@ -52,13 +52,13 @@ class HomePage extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       ElevatedButton(
-                        onPressed: viewModel.isLoading ? null : () async {
+                        onPressed: matchMakingViewModel.isLoading ? null : () async {
                           print("Hello");
                           // log.info("Joining public game...");
-                          await viewModel.joinPublicRoom();
+                          await matchMakingViewModel.joinPublicRoom();
                                 
                             // Check if joining was successful
-                            if (viewModel.room != null && viewModel.error == null) {
+                            if (matchMakingViewModel.room != null && matchMakingViewModel.error == null) {
                               Navigator.push(
                                 // ignore: use_build_context_synchronously
                                 context,
@@ -66,10 +66,10 @@ class HomePage extends StatelessWidget {
                                   builder: (context) => const GameLayout(),
                                 ),
                               );
-                            } else if (viewModel.error != null) {
+                            } else if (matchMakingViewModel.error != null) {
                               // Show error message
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(viewModel.error!)),
+                                SnackBar(content: Text(matchMakingViewModel.error!)),
                               );
                             }
                         },

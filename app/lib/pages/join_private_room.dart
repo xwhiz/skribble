@@ -17,7 +17,7 @@ class _JoinPrivateRoomState extends State<JoinPrivateRoom> {
   final TextEditingController codeController = TextEditingController();
   @override
   Widget build(BuildContext context) {
-    final viewModel = Provider.of<MatchmakingViewModel>(context);
+    final matchMakingViewModel = Provider.of<MatchmakingViewModel>(context);
 
     return Scaffold(
       body: Container(
@@ -85,7 +85,7 @@ class _JoinPrivateRoomState extends State<JoinPrivateRoom> {
                       const SizedBox(height: 20),
                       ElevatedButton(
                         onPressed: () async {
-                          await viewModel.joinPrivateRoom(codeController.text);
+                          await matchMakingViewModel.joinPrivateRoom(codeController.text);
                           Navigator.push(
                             context,
                             MaterialPageRoute(
