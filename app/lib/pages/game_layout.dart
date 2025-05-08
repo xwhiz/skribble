@@ -8,9 +8,7 @@ class GameLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     final viewModel = Provider.of<MatchmakingViewModel>(context);
-
 
     return Scaffold(
       body: SafeArea(
@@ -85,7 +83,6 @@ class GameLayout extends StatelessWidget {
                 ],
               ),
             ),
-
             Container(
               height: 20,
               color: Color.fromARGB(179, 32, 42, 53),
@@ -142,7 +139,14 @@ class GameLayout extends StatelessWidget {
                     child: ClipRRect(
                       child: Container(
                         color: Colors.blueGrey[50],
-                        child: const ChatInterface(),
+                        child:
+                            viewModel.currentRoomId != null
+                                ? ChatInterface(
+                                  roomId: viewModel.currentRoomId!,
+                                )
+                                : const Center(
+                                  child: CircularProgressIndicator(),
+                                ), // Wait if roomId is null
                       ),
                     ),
                   ),
