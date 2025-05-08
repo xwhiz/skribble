@@ -13,6 +13,8 @@ class RoomModel {
   final String? hint;
   final String? hiddenWord; // Word with dashes for players to guess
   final String? timeLeft; // Formatted time left "01:25"
+  final bool? isPrivate;
+  final int? roundDuration;
   final List<PlayerModel>? players;
 
   RoomModel({
@@ -27,6 +29,8 @@ class RoomModel {
     this.hint,
     this.hiddenWord,
     this.timeLeft,
+    this.isPrivate,
+    this.roundDuration,
     this.players,
   });
 
@@ -51,6 +55,8 @@ class RoomModel {
       hint: json['hint'],
       hiddenWord: json['hiddenWord'],
       timeLeft: json['timeLeft'],
+      isPrivate: json['isPrivate'] ?? false,
+      roundDuration: json['roundDuration'],
       players: playersList,
     );
   }
