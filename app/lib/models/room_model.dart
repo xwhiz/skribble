@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+//import 'package:cloud_firestore/cloud_firestore.dart';
 import 'player_model.dart';
 
 class RoomModel {
@@ -34,9 +34,10 @@ class RoomModel {
     // Parse players list if it exists
     List<PlayerModel>? playersList;
     if (json['players'] != null) {
-      playersList = (json['players'] as List)
-          .map((playerJson) => PlayerModel.fromJson(playerJson))
-          .toList();
+      playersList =
+          (json['players'] as List)
+              .map((playerJson) => PlayerModel.fromJson(playerJson))
+              .toList();
     }
 
     return RoomModel(
