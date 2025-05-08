@@ -1,16 +1,23 @@
 import 'dart:ui';
 
+import 'package:provider/provider.dart';
 import 'package:app/pages/create_room.dart';
 import 'package:app/pages/exisitng_rooms.dart';
 import 'package:app/pages/game_layout.dart';
 import 'package:app/pages/join_private_room.dart';
 import 'package:flutter/material.dart';
+import 'package:app/viewmodels/matchmaking_view_model.dart';
+import 'package:app/logger.dart'; // same import
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
+
+    //Access the ViewModel
+    final viewModel = Provider.of<MatchmakingViewModel>(context);
+
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -44,27 +51,37 @@ class HomePage extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      SizedBox(
-                        width: 300,
-
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              // ignore: use_build_context_synchronously
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const GameLayout(),
-                              ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            // ignore: deprecated_member_use
-                            backgroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 15),
-                            elevation: 0,
+                      ElevatedButton(
+                        onPressed: viewModel.isLoading ? null : () async {
+                          print("Hello");
+                          // log.info("Joining public game...");
+                          await viewModel.joinRoom();
+                                
+                            // Check if joining was successful
+                            if (viewModel.room != null && viewModel.error == null) {
+                              Navigator.push(
+                                // ignore: use_build_context_synchronously
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const GameLayout(),
+                                ),
+                              );
+                            } else if (viewModel.error != null) {
+                              // Show error message
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(viewModel.error!)),
+                              );
+                            }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          // ignore: deprecated_member_use
+                          backgroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 50,
+                            vertical: 15,
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
