@@ -69,9 +69,11 @@ class HomePage extends StatelessWidget {
                             child: Container(
                               padding: const EdgeInsets.all(25),
                               decoration: BoxDecoration(
+                                // ignore: deprecated_member_use
                                 color: Colors.white.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
+                                  // ignore: deprecated_member_use
                                   color: Colors.white.withOpacity(0.3),
                                 ),
                               ),
