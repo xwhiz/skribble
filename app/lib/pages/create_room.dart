@@ -89,55 +89,7 @@ class _CreateRoomState extends State<CreateRoom> {
                       ),
 
                       const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: RadioListTile<RoomType>(
-                              title: const Text(
-                                'Private',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontFamily: 'ComicNeue',
-                                  color: Color.fromARGB(179, 32, 42, 53),
-                                ),
-                              ),
-                              value: RoomType.private,
-                              groupValue: _roomType,
-                              onChanged: (RoomType? value) {
-                                setState(() {
-                                  _roomType = value;
-                                });
-                              },
-                              dense: true,
-                              contentPadding: EdgeInsets.zero,
-                              activeColor: Color.fromARGB(179, 32, 42, 53),
-                            ),
-                          ),
-                          Expanded(
-                            child: RadioListTile<RoomType>(
-                              title: const Text(
-                                'Public',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontFamily: 'ComicNeue',
-                                  color: Color.fromARGB(179, 32, 42, 53),
-                                ),
-                              ),
-                              value: RoomType.public,
-                              groupValue: _roomType,
-                              onChanged: (RoomType? value) {
-                                setState(() {
-                                  _roomType = value;
-                                });
-                              },
-                              dense: true,
-                              contentPadding: EdgeInsets.zero,
-                              activeColor: Color.fromARGB(179, 32, 42, 53),
-                            ),
-                          ),
-                        ],
-                      ),
+
                       TextField(
                         controller: wordBankController,
                         obscureText: true,
