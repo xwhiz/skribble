@@ -44,168 +44,141 @@ class HomePage extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            // ignore: use_build_context_synchronously
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const GameLayout(),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          // ignore: deprecated_member_use
-                          backgroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 50,
-                            vertical: 15,
-                          ),
-                          elevation: 0,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.public,
-                              color: Color.fromARGB(179, 32, 42, 53),
-                            ),
-                            const SizedBox(width: 10),
-                            const Text(
-                              "Join Public Game",
-                              style: TextStyle(
-                                fontSize: 24,
-                                color: Color.fromARGB(179, 32, 42, 53),
-                                fontWeight: FontWeight.normal,
-                                fontFamily:
-                                    'ComicNeue', // Applying Comic Neue font
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      SizedBox(
+                        width: 300,
 
-                      const SizedBox(height: 10),
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            // ignore: use_build_context_synchronously
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const JoinPrivateRoom(),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          // ignore: deprecated_member_use
-                          backgroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 50,
-                            vertical: 15,
-                          ),
-                          elevation: 0,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.privacy_tip,
-                              color: Color.fromARGB(179, 32, 42, 53),
-                            ),
-                            const SizedBox(width: 10),
-                            const Text(
-                              "Join Private Game",
-                              style: TextStyle(
-                                fontSize: 24,
-                                color: Color.fromARGB(179, 32, 42, 53),
-                                fontWeight: FontWeight.normal,
-                                fontFamily:
-                                    'ComicNeue', // Applying Comic Neue font
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              // ignore: use_build_context_synchronously
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const GameLayout(),
                               ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            // ignore: deprecated_member_use
+                            backgroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                          ],
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            elevation: 0,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.public,
+                                color: Color.fromARGB(179, 32, 42, 53),
+                              ),
+                              const SizedBox(width: 10),
+                              const Text(
+                                "Join Public Game",
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  color: Color.fromARGB(179, 32, 42, 53),
+                                  fontWeight: FontWeight.normal,
+                                  fontFamily:
+                                      'ComicNeue', // Applying Comic Neue font
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                       const SizedBox(height: 10),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          ElevatedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const CreateRoom(),
-                                ),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                      SizedBox(
+                        width: 300,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              // ignore: use_build_context_synchronously
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const JoinPrivateRoom(),
                               ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 30,
-                                vertical: 15,
-                              ),
-                              elevation: 0,
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            // ignore: deprecated_member_use
+                            backgroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.add,
-                                  color: Color.fromARGB(179, 32, 42, 53),
-                                ),
-                                const SizedBox(width: 10),
-                                const Text(
-                                  "Create Room",
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    color: Color.fromARGB(179, 32, 42, 53),
-                                    fontFamily: 'ComicNeue',
-                                  ),
-                                ),
-                              ],
-                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            elevation: 0,
                           ),
-                          const SizedBox(height: 10),
-                          ElevatedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const ExisitngRooms(),
-                                ),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 30,
-                                vertical: 15,
-                              ),
-                              elevation: 0,
-                            ),
-                            child: const Text(
-                              "Existing Rooms",
-                              style: TextStyle(
-                                fontSize: 20,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.privacy_tip,
                                 color: Color.fromARGB(179, 32, 42, 53),
-                                fontFamily: 'ComicNeue',
                               ),
-                            ),
+                              const SizedBox(width: 10),
+                              const Text(
+                                "Join Private Game",
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  color: Color.fromARGB(179, 32, 42, 53),
+                                  fontWeight: FontWeight.normal,
+                                  fontFamily:
+                                      'ComicNeue', // Applying Comic Neue font
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: 300,
+
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              // ignore: use_build_context_synchronously
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const CreateRoom(),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            // ignore: deprecated_member_use
+                            backgroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 50,
+                              vertical: 15,
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.add,
+                                color: Color.fromARGB(179, 32, 42, 53),
+                              ),
+                              const SizedBox(width: 10),
+                              const Text(
+                                "Create Room",
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  color: Color.fromARGB(179, 32, 42, 53),
+                                  fontWeight: FontWeight.normal,
+                                  fontFamily:
+                                      'ComicNeue', // Applying Comic Neue font
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ],
                   ),
