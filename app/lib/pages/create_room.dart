@@ -3,10 +3,6 @@ import 'dart:ui';
 import 'package:app/pages/game_layout.dart';
 import 'package:flutter/material.dart';
 
-enum RoomType { private, public }
-
-enum WordBank { easy, medium, hard, customBank }
-
 class CreateRoom extends StatefulWidget {
   const CreateRoom({super.key});
 
@@ -15,9 +11,6 @@ class CreateRoom extends StatefulWidget {
 }
 
 class _CreateRoomState extends State<CreateRoom> {
-  RoomType? _roomType = RoomType.private;
-  WordBank? _wordBank = WordBank.easy;
-
   TextEditingController roomNameController = TextEditingController();
   TextEditingController wordBankController = TextEditingController();
   TextEditingController maxPlayerController = TextEditingController();
@@ -60,7 +53,7 @@ class _CreateRoomState extends State<CreateRoom> {
                       TextField(
                         controller: roomNameController,
                         decoration: InputDecoration(
-                          hintText: "Enter Room Name",
+                          hintText: "Enter Room ID",
                           hintStyle: TextStyle(
                             color: const Color.fromARGB(179, 32, 42, 53),
                             fontSize: 14,
@@ -94,7 +87,7 @@ class _CreateRoomState extends State<CreateRoom> {
                         controller: wordBankController,
                         obscureText: true,
                         decoration: InputDecoration(
-                          hintText: "Choose Word Bank",
+                          hintText: "Enter number of rounds",
                           hintStyle: TextStyle(
                             color: const Color.fromARGB(179, 32, 42, 53),
                             fontSize: 14,
@@ -122,105 +115,105 @@ class _CreateRoomState extends State<CreateRoom> {
                       ),
 
                       const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: RadioListTile<WordBank>(
-                              title: const Text(
-                                'Easy',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontFamily: 'ComicNeue',
-                                  color: Color.fromARGB(179, 32, 42, 53),
-                                ),
-                              ),
-                              value: WordBank.easy,
-                              groupValue: _wordBank,
-                              onChanged: (WordBank? value) {
-                                setState(() {
-                                  _wordBank = value;
-                                });
-                              },
-                              dense: true,
-                              contentPadding: EdgeInsets.zero,
-                              activeColor: Color.fromARGB(179, 32, 42, 53),
-                            ),
-                          ),
-                          Expanded(
-                            child: RadioListTile<WordBank>(
-                              title: const Text(
-                                'Medium',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontFamily: 'ComicNeue',
-                                  color: Color.fromARGB(179, 32, 42, 53),
-                                ),
-                              ),
-                              value: WordBank.medium,
-                              groupValue: _wordBank,
-                              onChanged: (WordBank? value) {
-                                setState(() {
-                                  _wordBank = value;
-                                });
-                              },
-                              dense: true,
-                              contentPadding: EdgeInsets.zero,
-                              activeColor: Color.fromARGB(179, 32, 42, 53),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: RadioListTile<WordBank>(
-                              title: const Text(
-                                'Hard',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontFamily: 'ComicNeue',
-                                  color: Color.fromARGB(179, 32, 42, 53),
-                                ),
-                              ),
-                              value: WordBank.hard,
-                              groupValue: _wordBank,
-                              onChanged: (WordBank? value) {
-                                setState(() {
-                                  _wordBank = value;
-                                });
-                              },
-                              dense: true,
-                              contentPadding: EdgeInsets.zero,
-                              activeColor: Color.fromARGB(179, 32, 42, 53),
-                            ),
-                          ),
-                          Expanded(
-                            child: RadioListTile<WordBank>(
-                              title: const Text(
-                                'Custom Word Bank',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontFamily: 'ComicNeue',
-                                  color: Color.fromARGB(179, 32, 42, 53),
-                                ),
-                              ),
-                              value: WordBank.customBank,
-                              groupValue: _wordBank,
-                              onChanged: (WordBank? value) {
-                                setState(() {
-                                  _wordBank = value;
-                                });
-                              },
-                              dense: true,
-                              contentPadding: EdgeInsets.zero,
-                              activeColor: Color.fromARGB(179, 32, 42, 53),
-                            ),
-                          ),
-                        ],
-                      ),
+                      // Row(
+                      //   mainAxisAlignment: MainAxisAlignment.center,
+                      //   children: [
+                      //     Expanded(
+                      //       child: RadioListTile<WordBank>(
+                      //         title: const Text(
+                      //           'Easy',
+                      //           style: TextStyle(
+                      //             fontSize: 14,
+                      //             fontFamily: 'ComicNeue',
+                      //             color: Color.fromARGB(179, 32, 42, 53),
+                      //           ),
+                      //         ),
+                      //         value: WordBank.easy,
+                      //         groupValue: _wordBank,
+                      //         onChanged: (WordBank? value) {
+                      //           setState(() {
+                      //             _wordBank = value;
+                      //           });
+                      //         },
+                      //         dense: true,
+                      //         contentPadding: EdgeInsets.zero,
+                      //         activeColor: Color.fromARGB(179, 32, 42, 53),
+                      //       ),
+                      //     ),
+                      //     Expanded(
+                      //       child: RadioListTile<WordBank>(
+                      //         title: const Text(
+                      //           'Medium',
+                      //           style: TextStyle(
+                      //             fontSize: 14,
+                      //             fontFamily: 'ComicNeue',
+                      //             color: Color.fromARGB(179, 32, 42, 53),
+                      //           ),
+                      //         ),
+                      //         value: WordBank.medium,
+                      //         groupValue: _wordBank,
+                      //         onChanged: (WordBank? value) {
+                      //           setState(() {
+                      //             _wordBank = value;
+                      //           });
+                      //         },
+                      //         dense: true,
+                      //         contentPadding: EdgeInsets.zero,
+                      //         activeColor: Color.fromARGB(179, 32, 42, 53),
+                      //       ),
+                      //     ),
+                      //   ],
+                      // ),
+                      // const SizedBox(height: 10),
+                      // Row(
+                      //   mainAxisAlignment: MainAxisAlignment.center,
+                      //   children: [
+                      //     Expanded(
+                      //       child: RadioListTile<WordBank>(
+                      //         title: const Text(
+                      //           'Hard',
+                      //           style: TextStyle(
+                      //             fontSize: 14,
+                      //             fontFamily: 'ComicNeue',
+                      //             color: Color.fromARGB(179, 32, 42, 53),
+                      //           ),
+                      //         ),
+                      //         value: WordBank.hard,
+                      //         groupValue: _wordBank,
+                      //         onChanged: (WordBank? value) {
+                      //           setState(() {
+                      //             _wordBank = value;
+                      //           });
+                      //         },
+                      //         dense: true,
+                      //         contentPadding: EdgeInsets.zero,
+                      //         activeColor: Color.fromARGB(179, 32, 42, 53),
+                      //       ),
+                      //     ),
+                      //     Expanded(
+                      //       child: RadioListTile<WordBank>(
+                      //         title: const Text(
+                      //           'Custom Word Bank',
+                      //           style: TextStyle(
+                      //             fontSize: 14,
+                      //             fontFamily: 'ComicNeue',
+                      //             color: Color.fromARGB(179, 32, 42, 53),
+                      //           ),
+                      //         ),
+                      //         value: WordBank.customBank,
+                      //         groupValue: _wordBank,
+                      //         onChanged: (WordBank? value) {
+                      //           setState(() {
+                      //             _wordBank = value;
+                      //           });
+                      //         },
+                      //         dense: true,
+                      //         contentPadding: EdgeInsets.zero,
+                      //         activeColor: Color.fromARGB(179, 32, 42, 53),
+                      //       ),
+                      //     ),
+                      //   ],
+                      // ),
                       TextField(
                         controller: maxPlayerController,
                         obscureText: true,
@@ -298,16 +291,13 @@ class _CreateRoomState extends State<CreateRoom> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 50,
-                            vertical: 15,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 40),
                           elevation: 0,
                         ),
                         child: const Text(
                           "Create",
                           style: TextStyle(
-                            fontSize: 24,
+                            fontSize: 16,
                             color: Color.fromARGB(179, 32, 42, 53),
                             fontWeight: FontWeight.bold,
                             fontFamily: 'ComicNeue', // Applying Comic Neue font
