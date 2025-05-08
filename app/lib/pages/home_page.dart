@@ -7,6 +7,7 @@ import 'package:app/pages/game_layout.dart';
 import 'package:app/pages/join_private_room.dart';
 import 'package:flutter/material.dart';
 import 'package:app/viewmodels/matchmaking_view_model.dart';
+import 'package:app/logger.dart'; // same import
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -51,28 +52,26 @@ class HomePage extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       ElevatedButton(
-                        onPressed: () {
-                          viewModel.isLoading
-                            ? null // Disable button while loading
-                            : () async {
-                                await viewModel.joinRoom();
+                        onPressed: viewModel.isLoading ? null : () async {
+                          print("Hello");
+                          // log.info("Joining public game...");
+                          await viewModel.joinRoom();
                                 
-                                // Check if joining was successful
-                                if (viewModel.room != null && viewModel.error == null) {
-                                  Navigator.push(
-                                    // ignore: use_build_context_synchronously
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const GameLayout(),
-                                    ),
-                                  );
-                                } else if (viewModel.error != null) {
-                                  // Show error message
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(viewModel.error!)),
-                                  );
-                                }
-                              };
+                            // Check if joining was successful
+                            if (viewModel.room != null && viewModel.error == null) {
+                              Navigator.push(
+                                // ignore: use_build_context_synchronously
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const GameLayout(),
+                                ),
+                              );
+                            } else if (viewModel.error != null) {
+                              // Show error message
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(viewModel.error!)),
+                              );
+                            }
                         },
                         style: ElevatedButton.styleFrom(
                           // ignore: deprecated_member_use

@@ -9,8 +9,11 @@ import 'firebase_options.dart';
 //import 'package:app/pages/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'logger.dart'; // import your logger
 
 void main() async {
+  // await setupLogging(); // initialize logging
+  // log.info("App started"); // log app start
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Firebase
@@ -52,3 +55,5 @@ class App extends StatelessWidget {
     );
   }
 }
+
+

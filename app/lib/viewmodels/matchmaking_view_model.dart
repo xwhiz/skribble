@@ -21,6 +21,7 @@ class MatchmakingViewModel extends ChangeNotifier {
   Future<void> joinRoom() async {
     _setLoading(true);
     _error = null;
+    print("Joining room...");
 
     try {
       final result = await _firestoreService.joinRoom();
@@ -33,6 +34,7 @@ class MatchmakingViewModel extends ChangeNotifier {
       _subscribeToRoom(result['roomId']);
     } catch (e) {
       _error = 'Failed to join room: $e';
+      print(_error);
     } finally {
       _setLoading(false);
     }

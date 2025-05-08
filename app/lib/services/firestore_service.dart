@@ -32,28 +32,37 @@ class FirestoreService {
   // Join a room or create a new one if no rooms are available
   Future<Map<String, dynamic>> joinRoom() async {
     // Get current user
+
     final User? currentUser = _auth.currentUser;
     if (currentUser == null) {
       throw Exception('User not authenticated');
     }
-
     // Transaction to ensure atomicity
     return _db.runTransaction<Map<String, dynamic>>(
       (transaction) async {
         // Check for available rooms (status: 'waiting', not full)
-        QuerySnapshot availableRooms = await _db
-            .collection('Room')
-            .where('status', isEqualTo: 'waiting')
-            .where('currentPlayers', isLessThan: 8)
-            .orderBy('currentPlayers', descending: true) // Join the most populated room first
-            .limit(1)
-            .get();
+        // try {
+          var availableRooms = await _db
+              .collection('Room')
+              .where('status', isEqualTo: 'waiting')
+              .where('currentPlayers', isLessThan: 8)
+              .orderBy('currentPlayers', descending: true)
+              .limit(1)
+              .get();
+          print('Available rooms: ${availableRooms.docs.length}');
+          // print(availableRooms);
+        // } catch (e, stack) {
+        //   print('Failed to join room: $e');
+        //   print('Stack trace: $stack');
+        // }
+            // print(availableRooms);
 
         String roomId;
         bool isNewRoom = false;
 
         if (availableRooms.docs.isNotEmpty) {
           // Join an existing room
+          print('Joining existing room');
           roomId = availableRooms.docs[0].id;
           DocumentReference roomRef = _db.collection('Room').doc(roomId);
 
@@ -68,7 +77,7 @@ class FirestoreService {
               {
                 'userId': currentUser.uid,
                 'username': currentUser.displayName ?? 'Anonymous',
-                'joinedAt': FieldValue.serverTimestamp(),
+                'joinedAt': DateTime.now(),
                 'score': 0,
                 'isDrawing': false,
               }
@@ -100,12 +109,14 @@ class FirestoreService {
               {
                 'userId': currentUser.uid,
                 'username': currentUser.displayName ?? 'Anonymous',
-                'joinedAt': FieldValue.serverTimestamp(),
+                'joinedAt': DateTime.now(),
                 'score': 0,
                 'isDrawing': false,
               }
             ],
-          });
+          }
+         );
+          print("No available rooms, created a new one");
         }
 
         return {
