@@ -1,13 +1,19 @@
 //import 'package:app/pages/chat_interface.dart';
 import 'package:app/pages/splash_screen.dart';
+import 'package:app/viewmodels/matchmaking_view_model.dart';
+import 'package:provider/provider.dart';
+import 'package:app/services/firestore_service.dart';
 
 import 'firebase_options.dart';
 
 //import 'package:app/pages/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'logger.dart'; // import your logger
 
 void main() async {
+  // await setupLogging(); // initialize logging
+  // log.info("App started"); // log app start
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Firebase
@@ -25,18 +31,40 @@ void main() async {
   runApp(const App());
 }
 
-class App extends StatelessWidget {
+class App extends StatefulWidget {
   const App({super.key});
 
   @override
+  State<App> createState() => _AppState();
+}
+
+class _AppState extends State<App> {
+  @override
+  void dispose() {
+    
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData.from(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.brown),
-        useMaterial3: true,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (context) => MatchmakingViewModel(
+            FirestoreService(),
+          ),
+          ),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData.from(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.brown),
+          useMaterial3: true,
+        ),
+        home: SplashScreen(),
       ),
-      home: SplashScreen(),
     );
   }
 }
+
+

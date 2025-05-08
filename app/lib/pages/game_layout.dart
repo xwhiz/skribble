@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'chat_interface.dart'; // Import your ChatInterface
+import 'package:provider/provider.dart';
+import '../viewmodels/matchmaking_view_model.dart'; // Import your MatchmakingViewModel
 
 class GameLayout extends StatelessWidget {
   const GameLayout({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final viewModel = Provider.of<MatchmakingViewModel>(context);
+
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -79,7 +83,6 @@ class GameLayout extends StatelessWidget {
                 ],
               ),
             ),
-
             Container(
               height: 20,
               color: Color.fromARGB(179, 32, 42, 53),
@@ -136,7 +139,14 @@ class GameLayout extends StatelessWidget {
                     child: ClipRRect(
                       child: Container(
                         color: Colors.blueGrey[50],
-                        child: const ChatInterface(),
+                        child:
+                            viewModel.currentRoomId != null
+                                ? ChatInterface(
+                                  roomId: viewModel.currentRoomId!,
+                                )
+                                : const Center(
+                                  child: CircularProgressIndicator(),
+                                ), // Wait if roomId is null
                       ),
                     ),
                   ),

@@ -1,14 +1,21 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:app/pages/create_room.dart';
 import 'package:app/pages/game_layout.dart';
 import 'package:app/pages/join_private_room.dart';
+import 'package:app/viewmodels/matchmaking_view_model.dart';
+import 'package:app/logger.dart'; // same import
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
+
+    //Access the ViewModel
+    final viewModel = Provider.of<MatchmakingViewModel>(context);
+
     return Scaffold(
       body: SafeArea(
         child: LayoutBuilder(
@@ -24,7 +31,7 @@ class HomePage extends StatelessWidget {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                  ),
+                  ), 
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(horizontal: 30),
 
@@ -61,7 +68,6 @@ class HomePage extends StatelessWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 20),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(20),
                           child: BackdropFilter(
@@ -84,14 +90,26 @@ class HomePage extends StatelessWidget {
                                     context,
                                     icon: Icons.public,
                                     text: "Join Public Game",
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder:
-                                              (context) => const GameLayout(),
-                                        ),
-                                      );
+                                    onTap: viewModel.isLoading ? null : () async {
+                                      print("Hello");
+                                      // log.info("Joining public game...");
+                                      await viewModel.joinRoom();
+
+                                        // Check if joining was successful
+                                        if (viewModel.room != null && viewModel.error == null) {
+                                          Navigator.push(
+                                            // ignore: use_build_context_synchronously
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => const GameLayout(),
+                                            ),
+                                          );
+                                        } else if (viewModel.error != null) {
+                                          // Show error message
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(content: Text(viewModel.error!)),
+                                          );
+                                        }
                                     },
                                   ),
                                   const SizedBox(height: 10),
