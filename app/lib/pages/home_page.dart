@@ -82,7 +82,9 @@ class HomePage extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                             horizontal: 50,
                             vertical: 15,
+                          )
                           ),
+                      
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -104,7 +106,7 @@ class HomePage extends StatelessWidget {
                             ],
                           ),
                         ),
-                      ),
+                  
                       const SizedBox(height: 10),
                       SizedBox(
                         width: 300,
