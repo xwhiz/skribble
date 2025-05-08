@@ -17,6 +17,7 @@ class MatchmakingViewModel extends ChangeNotifier {
   String? get error => _error;
 
   Stream<DocumentSnapshot>? _roomStream;
+  String? get currentRoomId => _room?.roomCode;
 
   Future<void> joinRoom() async {
     _setLoading(true);
@@ -25,10 +26,11 @@ class MatchmakingViewModel extends ChangeNotifier {
 
     try {
       final result = await _firestoreService.joinRoom();
-      final roomDoc = await FirebaseFirestore.instance
-          .collection('Room')
-          .doc(result['roomId'])
-          .get();
+      final roomDoc =
+          await FirebaseFirestore.instance
+              .collection('Room')
+              .doc(result['roomId'])
+              .get();
 
       _room = RoomModel.fromJson(roomDoc.data()!);
       _subscribeToRoom(result['roomId']);
