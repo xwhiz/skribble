@@ -41,7 +41,6 @@ class App extends StatefulWidget {
 class _AppState extends State<App> {
   @override
   void dispose() {
-    
     super.dispose();
   }
 
@@ -50,10 +49,8 @@ class _AppState extends State<App> {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (context) => MatchmakingViewModel(
-            FirestoreService(),
-          ),
-          ),
+          create: (context) => MatchmakingViewModel(FirestoreService()),
+        ),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -66,5 +63,3 @@ class _AppState extends State<App> {
     );
   }
 }
-
-
