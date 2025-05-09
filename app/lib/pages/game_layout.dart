@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'chat_interface.dart'; // Import your ChatInterface
 import 'package:provider/provider.dart';
-import '../viewmodels/matchmaking_view_model.dart'; // Import your MatchmakingViewModel
+import '../viewmodels/main_view_model.dart'; // Import your MatchmakingViewModel
 
 class GameLayout extends StatelessWidget {
   const GameLayout({super.key});
 
   @override
   Widget build(BuildContext context) {
-
-    final viewModel = Provider.of<MatchmakingViewModel>(context);
-
+    final viewModel = Provider.of<MainViewModel>(context);
+    print("joined room with room id: ${viewModel.room?.roomCode}");
 
     return Scaffold(
       body: SafeArea(
@@ -70,22 +69,35 @@ class GameLayout extends StatelessWidget {
                   ),
 
                   // Right side: Hint
-                  Padding(
-                    padding: const EdgeInsets.only(right: 10),
-                    child: Text(
-                      'Hint: [word]', // Replace with actual dynamic hint
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        fontFamily: 'ComicNeue',
+                  Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(right: 10),
+                        child: Text(
+                          'Hint: [word]', // Replace with actual dynamic hint
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            fontFamily: 'ComicNeue',
+                          ),
+                        ),
                       ),
-                    ),
+                      IconButton(
+                        onPressed: () {
+                          viewModel.leaveRoom();
+                          Navigator.pop(context);
+                        },
+                        icon: const Icon(
+                          Icons.exit_to_app,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-
             Container(
               height: 20,
               color: Color.fromARGB(179, 32, 42, 53),
@@ -142,7 +154,14 @@ class GameLayout extends StatelessWidget {
                     child: ClipRRect(
                       child: Container(
                         color: Colors.blueGrey[50],
-                        child: const ChatInterface(),
+                        child:
+                            viewModel.currentRoomId != null
+                                ? ChatInterface(
+                                  roomId: viewModel.currentRoomId!,
+                                )
+                                : const Center(
+                                  child: CircularProgressIndicator(),
+                                ), // Wait if roomId is null
                       ),
                     ),
                   ),

@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-import 'package:app/pages/game_layout.dart';
+import 'package:app/pages/home_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -185,7 +185,7 @@ class _RegisterPageState extends State<RegisterPage> {
                               // ignore: use_build_context_synchronously
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const GameLayout(),
+                                builder: (context) => const HomePage(),
                               ),
                             );
                           }

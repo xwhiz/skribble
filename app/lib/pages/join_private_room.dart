@@ -1,7 +1,9 @@
 import 'dart:ui';
 
 import 'package:app/pages/game_layout.dart';
+import 'package:app/viewmodels/main_view_model.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class JoinPrivateRoom extends StatefulWidget {
   const JoinPrivateRoom({super.key});
@@ -14,6 +16,8 @@ class _JoinPrivateRoomState extends State<JoinPrivateRoom> {
   final TextEditingController codeController = TextEditingController();
   @override
   Widget build(BuildContext context) {
+    final matchMakingViewModel = Provider.of<MainViewModel>(context);
+
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -79,7 +83,10 @@ class _JoinPrivateRoomState extends State<JoinPrivateRoom> {
                       ),
                       const SizedBox(height: 20),
                       ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
+                          await matchMakingViewModel.joinPrivateRoom(
+                            codeController.text,
+                          );
                           Navigator.push(
                             context,
                             MaterialPageRoute(

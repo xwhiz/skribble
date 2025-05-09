@@ -1,6 +1,6 @@
 //import 'package:app/pages/chat_interface.dart';
 import 'package:app/pages/splash_screen.dart';
-import 'package:app/viewmodels/matchmaking_view_model.dart';
+import 'package:app/viewmodels/main_view_model.dart';
 import 'package:provider/provider.dart';
 import 'package:app/services/firestore_service.dart';
 
@@ -9,7 +9,6 @@ import 'firebase_options.dart';
 //import 'package:app/pages/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'logger.dart'; // import your logger
 
 void main() async {
   // await setupLogging(); // initialize logging
@@ -41,7 +40,6 @@ class App extends StatefulWidget {
 class _AppState extends State<App> {
   @override
   void dispose() {
-    
     super.dispose();
   }
 
@@ -50,10 +48,8 @@ class _AppState extends State<App> {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (context) => MatchmakingViewModel(
-            FirestoreService(),
-          ),
-          ),
+          create: (context) => MainViewModel(FirestoreService()),
+        ),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -66,5 +62,3 @@ class _AppState extends State<App> {
     );
   }
 }
-
-
