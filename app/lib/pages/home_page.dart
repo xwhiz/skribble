@@ -3,12 +3,10 @@ import 'dart:ui';
 
 import 'package:provider/provider.dart';
 import 'package:app/pages/create_room.dart';
-import 'package:app/pages/exisitng_rooms.dart';
 import 'package:app/pages/game_layout.dart';
 import 'package:app/pages/join_private_room.dart';
 import 'package:flutter/material.dart';
 import 'package:app/viewmodels/main_view_model.dart';
-import 'package:app/logger.dart'; // same import
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
