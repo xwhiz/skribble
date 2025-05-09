@@ -1,7 +1,7 @@
 import 'dart:ui';
 
 import 'package:app/pages/game_layout.dart';
-import 'package:app/viewmodels/matchmaking_view_model.dart';
+import 'package:app/viewmodels/main_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -19,7 +19,7 @@ class _CreateRoomState extends State<CreateRoom> {
   TextEditingController roundDurationController = TextEditingController();
   @override
   Widget build(BuildContext context) {
-    final matchMakingViewModel = Provider.of<MatchmakingViewModel>(context);
+    final matchMakingViewModel = Provider.of<MainViewModel>(context);
 
     return Scaffold(
       body: Container(
@@ -283,8 +283,10 @@ class _CreateRoomState extends State<CreateRoom> {
                       ElevatedButton(
                         onPressed: () {
                           matchMakingViewModel.createRoom(
-                            maxPlayers : int.parse(maxPlayerController.text),
-                            roundDuration : int.parse(roundDurationController.text),
+                            maxPlayers: int.parse(maxPlayerController.text),
+                            roundDuration: int.parse(
+                              roundDurationController.text,
+                            ),
                           );
                           Navigator.push(
                             context,
