@@ -20,6 +20,15 @@ class ChatMessage {
     );
   }
 
+  // Add a fromJson method to parse data
+  factory ChatMessage.fromJson(Map<String, dynamic> json) {
+    return ChatMessage(
+      name: json['name'] ?? 'Unknown',
+      message: json['message'] ?? '',
+      timestamp: json['timestamp'] ?? Timestamp.now(),
+    );
+  }
+
   Map<String, dynamic> toMap(String roomId) {
     return {
       'name': name,
@@ -27,5 +36,10 @@ class ChatMessage {
       'timestamp': timestamp,
       'roomId': roomId,
     };
+  }
+
+  // Optionally, you can add a toJson method if you need to write to Firestore
+  Map<String, dynamic> toJson() {
+    return {'name': name, 'message': message, 'timestamp': timestamp};
   }
 }
