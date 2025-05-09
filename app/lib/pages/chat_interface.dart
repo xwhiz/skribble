@@ -1,9 +1,10 @@
 import 'dart:ui';
+import 'package:app/models/chat_message_model.dart';
 import 'package:app/viewmodels/chat_view_model.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:app/viewmodels/matchmaking_view_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:app/services/firestore_service.dart';
+import 'package:provider/provider.dart';
 
 class ChatInterface extends StatefulWidget {
   final String roomId;
@@ -17,17 +18,12 @@ class ChatInterface extends StatefulWidget {
 
 class _ChatInterfaceState extends State<ChatInterface> {
   final TextEditingController messageController = TextEditingController();
-  //final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirestoreService firestoreService = FirestoreService();
-
-  late Timestamp loginTimestamp;
-  late ChatViewModel chatViewModel;
   bool isSendingButton = false; // Track sending status for button
+  late ChatViewModel chatViewModel;
 
   @override
   void initState() {
     super.initState();
-    loginTimestamp = Timestamp.now();
     chatViewModel = ChatViewModel(roomId: widget.roomId);
   }
 
@@ -35,8 +31,11 @@ class _ChatInterfaceState extends State<ChatInterface> {
     final String message = messageController.text.trim();
     final String userName =
         FirebaseAuth.instance.currentUser?.displayName ?? 'Anonymous';
+    final String userId =
+        FirebaseAuth.instance.currentUser?.uid ??
+        ''; // Get the current user's UID
 
-    if (message.isNotEmpty) {
+    if (message.isNotEmpty && userId.isNotEmpty) {
       setState(() {
         isSendingButton = true;
       });
@@ -44,9 +43,14 @@ class _ChatInterfaceState extends State<ChatInterface> {
       messageController.clear();
 
       try {
-        await chatViewModel.sendMessage(message);
+        // Ensure the message is passed to the ViewModel or directly to Firestore with the necessary parameters
+        await chatViewModel.sendMessage(
+          message,
+          userName,
+          userId,
+          widget.roomId,
+        );
       } catch (e) {
-        // ignore: avoid_print
         print('Failed to send message: $e');
       } finally {
         setState(() {
@@ -56,12 +60,10 @@ class _ChatInterfaceState extends State<ChatInterface> {
     }
   }
 
-  // Stream<QuerySnapshot> getMessages() {
-  //   return _firestore.collection('playerbook').orderBy('timestamp').snapshots();
-  // }
-
   @override
   Widget build(BuildContext context) {
+    var roomViewModel = Provider.of<MatchmakingViewModel>(context);
+
     final List<Color> messageColors = [
       const Color(0xFFFFD3B6),
       const Color(0xFFFFAAA5),
@@ -72,7 +74,6 @@ class _ChatInterfaceState extends State<ChatInterface> {
     ];
 
     return Container(
-      //color: const Color(0xFFE0EAFC),
       width: double.infinity,
       height: double.infinity,
       decoration: const BoxDecoration(
@@ -86,28 +87,23 @@ class _ChatInterfaceState extends State<ChatInterface> {
         child: Column(
           children: [
             Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: firestoreService.getMessages(),
+              child: StreamBuilder<List<ChatMessage>>(
+                stream: chatViewModel.getMessagesStream(
+                  roomViewModel.room!.roomCode,
+                ),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
                   }
 
-                  final messages = snapshot.data!.docs;
-
-                  final filteredMessages =
-                      messages.where((msg) {
-                        final Timestamp messageTimestamp =
-                            msg['timestamp'] ?? Timestamp(0, 0);
-                        return messageTimestamp.compareTo(loginTimestamp) >= 0;
-                      }).toList();
+                  final messages = snapshot.data!;
 
                   return ListView.builder(
-                    itemCount: filteredMessages.length,
+                    itemCount: messages.length,
                     itemBuilder: (context, index) {
-                      final messageData = filteredMessages[index];
-                      final String senderName = messageData['name'];
-                      final String message = messageData['message'];
+                      final messageData = messages[index];
+                      final String senderName = messageData.name;
+                      final String message = messageData.message;
 
                       final Color bgColor =
                           messageColors[index % messageColors.length];
@@ -121,7 +117,6 @@ class _ChatInterfaceState extends State<ChatInterface> {
                           ),
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            // ignore: deprecated_member_use
                             color: bgColor.withOpacity(0.8),
                             borderRadius: BorderRadius.circular(15),
                           ),
@@ -149,13 +144,9 @@ class _ChatInterfaceState extends State<ChatInterface> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     decoration: BoxDecoration(
-                      // ignore: deprecated_member_use
                       color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        // ignore: deprecated_member_use
-                        color: Colors.white.withOpacity(0.3),
-                      ),
+                      border: Border.all(color: Colors.white.withOpacity(0.3)),
                     ),
                     child: Row(
                       children: [
