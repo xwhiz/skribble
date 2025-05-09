@@ -1,3 +1,5 @@
+import 'package:app/data/constants.dart';
+import 'package:app/models/chat_message_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math';
@@ -7,27 +9,91 @@ class FirestoreService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   // Collection reference
   CollectionReference get playerbookCollection => _db.collection('playerbook');
+  String userName =
+      FirebaseAuth.instance.currentUser?.displayName ?? 'Unknown User';
 
-  // Add a message to the playerbook collection
-  Future<void> sendMessage(String sender, String message) async {
+  // Future<void> sendMessage(String sender, String message, String roomId) async {
+  //   try {
+  //     if (message.isNotEmpty) {
+  //       await FirebaseFirestore.instance
+  //           .collection('rooms')
+  //           .doc(roomId)
+  //           .collection('messages')
+  //           .add({
+  //             'text': message,
+  //             'sender': sender,
+  //             'timestamp': FieldValue.serverTimestamp(),
+  //           });
+  //     }
+  //   } catch (e) {
+  //     print('Error sending message: $e');
+  //   }
+  // }
+  Future<void> sendMessage(
+    String sender,
+    String message,
+    String roomId,
+    String playerId,
+  ) async {
     try {
-      await playerbookCollection.add({
-        'name': sender,
-        'message': message,
-        'timestamp': FieldValue.serverTimestamp(),
+      if (message.isEmpty) {
+        return;
+      }
+      var docReference = FirebaseFirestore.instance
+          .collection(K.roomCollection)
+          .doc(roomId);
+
+      await docReference.update({
+        'messages': FieldValue.arrayUnion([
+          {
+            'name': sender,
+            'message': message,
+            'userId': playerId,
+            'timestamp': DateTime.now(),
+          },
+        ]),
       });
+
+      print('Message sent successfully!');
     } catch (e) {
-      // ignore: avoid_print
       print('Error sending message: $e');
     }
   }
 
-  // Get real-time updates from the playerbook collection
-  Stream<QuerySnapshot> getMessages() {
-    return playerbookCollection
-        .orderBy('timestamp', descending: true)
-        .snapshots();
-  }
+  // // Get real-time updates from the playerbook collection
+  // Stream<QuerySnapshot> getMessages() {
+  //   return playerbookCollection
+  //       .orderBy('timestamp', descending: true)
+  //       .snapshots();
+  // }
+
+  // Stream<List<ChatMessage>> getMessagesFromFirestoreStream(
+  //   String roomId,
+  //   String playerId,
+  //   Timestamp loginTime,
+  // ) {
+  //   return FirebaseFirestore.instance
+  //       .collection(K.roomCollection)
+  //       .doc(roomId)
+  //       // .collection('players')
+  //       // .doc(playerId) // Reference to the specific player
+  //       // .collection('playerMessages') // The player's messages collection
+  //       // .orderBy('timestamp', descending: true)
+  //       // .snapshots()
+  //       // .map((snapshot) {
+  //       //   return snapshot.docs
+  //       //       .where(
+  //       //         (doc) =>
+  //       //             doc.data().containsKey('timestamp') &&
+  //       //             (doc.data()['timestamp'] as Timestamp).compareTo(
+  //       //                   loginTime,
+  //       //                 ) >
+  //       //                 0,
+  //       //       )
+  //       //       .map((doc) => ChatMessage.fromDocument(doc))
+  //       //       .toList();
+  //       // });
+  // }
 
   // Join a room or create a new one if no rooms are available
   Future<Map<String, dynamic>> joinRoom() async {
@@ -38,59 +104,62 @@ class FirestoreService {
       throw Exception('User not authenticated');
     }
     // Transaction to ensure atomicity
-    return _db.runTransaction<Map<String, dynamic>>(
-      (transaction) async {
-        // Check for available rooms (status: 'waiting', not full)
-        // try {
-          var availableRooms = await _db
-              .collection('Room')
+    return _db.runTransaction<Map<String, dynamic>>((transaction) async {
+      // Check for available rooms (status: 'waiting', not full)
+      // try {
+      var availableRooms =
+          await _db
+              .collection(K.roomCollection)
               .where('status', isEqualTo: 'waiting')
               .where('currentPlayers', isLessThan: 8)
               .orderBy('currentPlayers', descending: true)
               .limit(1)
               .get();
-          print('Available rooms: ${availableRooms.docs.length}');
-          // print(availableRooms);
-        // } catch (e, stack) {
-        //   print('Failed to join room: $e');
-        //   print('Stack trace: $stack');
-        // }
-            // print(availableRooms);
-        String roomId;
-        bool isNewRoom = false;
+      print('Available rooms: ${availableRooms.docs.length}');
+      // print(availableRooms);
+      // } catch (e, stack) {
+      //   print('Failed to join room: $e');
+      //   print('Stack trace: $stack');
+      // }
+      // print(availableRooms);
+      String roomId;
+      bool isNewRoom = false;
 
-        if (availableRooms.docs.isNotEmpty) {
-          // Join an existing room
-          print('Joining existing room');
-          roomId = availableRooms.docs[0].id;
-          DocumentReference roomRef = _db.collection('Room').doc(roomId);
+      if (availableRooms.docs.isNotEmpty) {
+        // Join an existing room
+        print('Joining existing room');
+        roomId = availableRooms.docs[0].id;
+        DocumentReference roomRef = _db.collection('Room').doc(roomId);
 
-          // Get the current data
-          DocumentSnapshot roomSnapshot = await transaction.get(roomRef);
-          Map<String, dynamic> roomData = roomSnapshot.data() as Map<String, dynamic>;
-        
-          // Update player count
-          transaction.update(roomRef, {
-            'currentPlayers': roomData['currentPlayers'] + 1,
-            'players': FieldValue.arrayUnion([
-              {
-                'userId': currentUser.uid,
-                'username': currentUser.displayName ?? 'Anonymous',
-                'joinedAt': DateTime.now(),
-                'score': 0,
-                'isDrawing': false,
-              }
-            ]),
-          });
+        // Get the current data
+        DocumentSnapshot roomSnapshot = await transaction.get(roomRef);
+        Map<String, dynamic> roomData =
+            roomSnapshot.data() as Map<String, dynamic>;
 
-        } else {
-          // Create a new room with a 6-character code
-          String roomCode = _generateRoomCode();
-          DocumentReference newRoomRef = _db.collection('Room').doc(roomCode);
-          roomId = roomCode;
-          isNewRoom = true;
+        // Update player count
+        transaction.update(roomRef, {
+          'currentPlayers': roomData['currentPlayers'] + 1,
+          'players': FieldValue.arrayUnion([
+            {
+              'userId': currentUser.uid,
+              'username': currentUser.displayName ?? 'Anonymous',
+              'joinedAt': DateTime.now(),
+              'score': 0,
+              'isDrawing': false,
+            },
+          ]),
+        });
+      } else {
+        // Create a new room with a 6-character code
+        String roomCode = _generateRoomCode();
+        DocumentReference newRoomRef = _db
+            .collection(K.roomCollection)
+            .doc(roomCode);
+        roomId = roomCode;
+        isNewRoom = true;
 
-          // Initialize the room
+        // Initialize the room
+        try {
           transaction.set(newRoomRef, {
             'roomCode': roomCode,
             'status': 'waiting',
@@ -104,6 +173,7 @@ class FirestoreService {
             'hint': '',
             'hiddenWord': '- - - - - -', // Default placeholder
             'timeLeft': '60:00',
+            'messages': [],
             'players': [
               {
                 'userId': currentUser.uid,
@@ -111,19 +181,17 @@ class FirestoreService {
                 'joinedAt': Timestamp.now(),
                 'score': 0,
                 'isDrawing': false,
-              }
+              },
             ],
-          }
-         );
-          print("No available rooms, created a new one");
+          });
+        } catch (e) {
+          print(e);
         }
+        print("No available rooms, created a new one");
+      }
 
-        return {
-          'roomId': roomId,
-          'isNewRoom': isNewRoom,
-        };
-      },
-    );
+      return {'roomId': roomId, 'isNewRoom': isNewRoom};
+    });
   }
 
   // Join a specific room by ID (for mid-game joining)
@@ -135,13 +203,15 @@ class FirestoreService {
 
     try {
       // Get room data
-      DocumentSnapshot roomSnapshot = await _db.collection('Room').doc(roomId).get();
+      DocumentSnapshot roomSnapshot =
+          await _db.collection('Room').doc(roomId).get();
 
       if (!roomSnapshot.exists) {
         return false; // Room doesn't exist
       }
 
-      Map<String, dynamic> roomData = roomSnapshot.data() as Map<String, dynamic>;
+      Map<String, dynamic> roomData =
+          roomSnapshot.data() as Map<String, dynamic>;
 
       // Check if room is full
       if (roomData['currentPlayers'] >= roomData['maxPlayers']) {
@@ -150,7 +220,9 @@ class FirestoreService {
 
       // Check if user is already in the room
       List<dynamic> players = roomData['players'] ?? [];
-      bool alreadyJoined = players.any((player) => player['userId'] == currentUser.uid);
+      bool alreadyJoined = players.any(
+        (player) => player['userId'] == currentUser.uid,
+      );
 
       if (alreadyJoined) {
         return true; // Player is already in the room
@@ -166,8 +238,10 @@ class FirestoreService {
             'joinedAt': FieldValue.serverTimestamp(),
             'score': 0,
             'isDrawing': false,
-            'isReady': roomData['status'] != 'waiting', // Auto-ready if game is in progress
-          }
+            'isReady':
+                roomData['status'] !=
+                'waiting', // Auto-ready if game is in progress
+          },
         ]),
       });
 
@@ -195,11 +269,14 @@ class FirestoreService {
         return; // Room doesn't exist
       }
 
-      Map<String, dynamic> roomData = roomSnapshot.data() as Map<String, dynamic>;
+      Map<String, dynamic> roomData =
+          roomSnapshot.data() as Map<String, dynamic>;
       List<dynamic> players = roomData['players'] ?? [];
 
       // Find the player to remove
-      int playerIndex = players.indexWhere((player) => player['userId'] == currentUser.uid);
+      int playerIndex = players.indexWhere(
+        (player) => player['userId'] == currentUser.uid,
+      );
       if (playerIndex == -1) {
         return; // Player not found
       }
@@ -245,7 +322,8 @@ class FirestoreService {
         return false;
       }
 
-      Map<String, dynamic> roomData = roomSnapshot.data() as Map<String, dynamic>;
+      Map<String, dynamic> roomData =
+          roomSnapshot.data() as Map<String, dynamic>;
       List<dynamic> players = roomData['players'] ?? [];
 
       // Check if there are at least 2 players
@@ -276,12 +354,10 @@ class FirestoreService {
       });
 
       // Update the drawer status in players array
-      List<dynamic> updatedPlayers = players.map((player) {
-        return {
-          ...player,
-          'isDrawing': player['userId'] == drawerId,
-        };
-      }).toList();
+      List<dynamic> updatedPlayers =
+          players.map((player) {
+            return {...player, 'isDrawing': player['userId'] == drawerId};
+          }).toList();
 
       await roomRef.update({'players': updatedPlayers});
 
@@ -294,7 +370,7 @@ class FirestoreService {
 
   // Stream to listen for room updates
   Stream<DocumentSnapshot> listenToRoom(String roomId) {
-    return _db.collection('Room').doc(roomId).snapshots();
+    return _db.collection(K.roomCollection).doc(roomId).snapshots();
   }
 
   // Generate a random room code
@@ -309,10 +385,35 @@ class FirestoreService {
   // Get a random word for the game
   String _getRandomWord() {
     final List<String> words = [
-      'apple', 'banana', 'cat', 'dog', 'elephant', 'fish', 'giraffe', 'house',
-      'igloo', 'jacket', 'key', 'lemon', 'monkey', 'notebook', 'ocean', 'pencil',
-      'queen', 'rabbit', 'sun', 'tree', 'umbrella', 'volcano', 'watermelon',
-      'yacht', 'zebra', 'airplane', 'beach', 'castle', 'dragon'
+      'apple',
+      'banana',
+      'cat',
+      'dog',
+      'elephant',
+      'fish',
+      'giraffe',
+      'house',
+      'igloo',
+      'jacket',
+      'key',
+      'lemon',
+      'monkey',
+      'notebook',
+      'ocean',
+      'pencil',
+      'queen',
+      'rabbit',
+      'sun',
+      'tree',
+      'umbrella',
+      'volcano',
+      'watermelon',
+      'yacht',
+      'zebra',
+      'airplane',
+      'beach',
+      'castle',
+      'dragon',
     ];
     return words[Random().nextInt(words.length)];
   }
@@ -330,6 +431,4 @@ class FirestoreService {
   String _generateHiddenWord(String word) {
     return word.split('').map((_) => '_ ').join('').trim();
   }
-   
 }
-

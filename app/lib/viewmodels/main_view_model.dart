@@ -1,12 +1,13 @@
+import 'package:app/data/constants.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/room_model.dart';
 import '../services/firestore_service.dart';
 
-class MatchmakingViewModel extends ChangeNotifier {
+class MainViewModel extends ChangeNotifier {
   final FirestoreService _firestoreService;
 
-  MatchmakingViewModel(this._firestoreService);
+  MainViewModel(this._firestoreService);
 
   RoomModel? _room;
   bool _isLoading = false;
@@ -26,9 +27,10 @@ class MatchmakingViewModel extends ChangeNotifier {
 
     try {
       final result = await _firestoreService.joinRoom();
+      print(result);
       final roomDoc =
           await FirebaseFirestore.instance
-              .collection('Room')
+              .collection(K.roomCollection)
               .doc(result['roomId'])
               .get();
 
@@ -36,7 +38,7 @@ class MatchmakingViewModel extends ChangeNotifier {
       _subscribeToRoom(result['roomId']);
     } catch (e) {
       _error = 'Failed to join room: $e';
-      print(_error);
+      print(e.toString());
     } finally {
       _setLoading(false);
     }
@@ -49,6 +51,15 @@ class MatchmakingViewModel extends ChangeNotifier {
       _roomStream = null;
       notifyListeners();
     }
+  }
+
+  Future<void> sendMessage(
+    String username,
+    String message,
+    String roomCode,
+    String userId,
+  ) async {
+    await _firestoreService.sendMessage(username, message, roomCode, userId);
   }
 
   void _subscribeToRoom(String roomId) {

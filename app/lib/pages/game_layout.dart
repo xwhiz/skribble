@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'chat_interface.dart'; // Import your ChatInterface
 import 'package:provider/provider.dart';
-import '../viewmodels/matchmaking_view_model.dart'; // Import your MatchmakingViewModel
+import '../viewmodels/main_view_model.dart'; // Import your MatchmakingViewModel
 
 class GameLayout extends StatelessWidget {
   const GameLayout({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final viewModel = Provider.of<MatchmakingViewModel>(context);
+    final viewModel = Provider.of<MainViewModel>(context);
 
     return Scaffold(
       body: SafeArea(
