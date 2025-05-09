@@ -73,6 +73,7 @@ class RoomModel {
       isPrivate: json['isPrivate'] ?? false,
       players: playersList,
       roundDuration: json['roundDuration'],
+      messages: messages,
       createAt:
           json['createAt'] != null ? (json['createAt'] as Timestamp) : null,
     );

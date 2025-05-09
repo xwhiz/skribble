@@ -1,6 +1,4 @@
 import 'dart:ui';
-import 'package:app/models/chat_message_model.dart';
-import 'package:app/viewmodels/chat_view_model.dart';
 import 'package:app/viewmodels/main_view_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -41,9 +39,7 @@ class _ChatInterfaceState extends State<ChatInterface> {
       messageController.clear();
 
       try {
-        print("Before sending");
         await vm.sendMessage(userName, message, widget.roomId, userId);
-        print("After sending");
       } catch (e) {
         print('Failed to send message: $e');
       } finally {
