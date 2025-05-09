@@ -3,8 +3,19 @@ import 'chat_interface.dart'; // Import your ChatInterface
 import 'package:provider/provider.dart';
 import '../viewmodels/matchmaking_view_model.dart'; // Import your MatchmakingViewModel
 
-class GameLayout extends StatelessWidget {
+class GameLayout extends StatefulWidget {
   const GameLayout({super.key});
+
+  @override
+  State<GameLayout> createState() => _GameLayoutState();
+}
+
+class _GameLayoutState extends State<GameLayout> {
+  @override
+  void dispose() {
+    Provider.of<MatchmakingViewModel>(context).leaveRoom();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
