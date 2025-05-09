@@ -58,7 +58,7 @@ class MainViewModel extends ChangeNotifier {
               .collection('Room')
               .doc(result['roomId'])
               .get();
-      print("roomDoc: $roomDoc");
+
       _room = RoomModel.fromJson(roomDoc.data()!);
       _subscribeToRoom(result['roomId']);
     } catch (e) {
