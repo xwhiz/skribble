@@ -54,12 +54,6 @@ class GameLayout extends StatelessWidget {
                               fontFamily: 'ComicNeue',
                             ),
                           ),
-                          ElevatedButton(
-                            onPressed: () {
-                              matchMakingViewModel.leaveRoom();
-                              Navigator.pop(context);
-                            },
-                            child: Text("Leave Room")),
                         ],
                       ),
                     ),
@@ -76,17 +70,31 @@ class GameLayout extends StatelessWidget {
                   ),
 
                   // Right side: Hint
-                  Padding(
-                    padding: const EdgeInsets.only(right: 10),
-                    child: Text(
-                      'Hint: [word]', // Replace with actual dynamic hint
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        fontFamily: 'ComicNeue',
+                  Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(right: 10),
+                        child: Text(
+                          'Hint: [word]', // Replace with actual dynamic hint
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            fontFamily: 'ComicNeue',
+                          ),
+                        ),
                       ),
-                    ),
+                      IconButton(
+                        onPressed: () {
+                          matchMakingViewModel.leaveRoom();
+                          Navigator.pop(context);
+                        },
+                        icon: const Icon(
+                          Icons.exit_to_app,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
