@@ -63,33 +63,33 @@ class FirestoreService {
   //       .snapshots();
   // }
 
-  Stream<List<ChatMessage>> getMessagesFromFirestoreStream(
-    String roomId,
-    String playerId,
-    Timestamp loginTime,
-  ) {
-    return FirebaseFirestore.instance
-        .collection('rooms')
-        .doc(roomId)
-        .collection('players')
-        .doc(playerId) // Reference to the specific player
-        .collection('playerMessages') // The player's messages collection
-        .orderBy('timestamp', descending: true)
-        .snapshots()
-        .map((snapshot) {
-          return snapshot.docs
-              .where(
-                (doc) =>
-                    doc.data().containsKey('timestamp') &&
-                    (doc.data()['timestamp'] as Timestamp).compareTo(
-                          loginTime,
-                        ) >
-                        0,
-              )
-              .map((doc) => ChatMessage.fromDocument(doc))
-              .toList();
-        });
-  }
+  // Stream<List<ChatMessage>> getMessagesFromFirestoreStream(
+  //   String roomId,
+  //   String playerId,
+  //   Timestamp loginTime,
+  // ) {
+  //   return FirebaseFirestore.instance
+  //       .collection(K.roomCollection)
+  //       .doc(roomId)
+  //       // .collection('players')
+  //       // .doc(playerId) // Reference to the specific player
+  //       // .collection('playerMessages') // The player's messages collection
+  //       // .orderBy('timestamp', descending: true)
+  //       // .snapshots()
+  //       // .map((snapshot) {
+  //       //   return snapshot.docs
+  //       //       .where(
+  //       //         (doc) =>
+  //       //             doc.data().containsKey('timestamp') &&
+  //       //             (doc.data()['timestamp'] as Timestamp).compareTo(
+  //       //                   loginTime,
+  //       //                 ) >
+  //       //                 0,
+  //       //       )
+  //       //       .map((doc) => ChatMessage.fromDocument(doc))
+  //       //       .toList();
+  //       // });
+  // }
 
   // Join a room or create a new one if no rooms are available
   Future<Map<String, dynamic>> joinRoom() async {

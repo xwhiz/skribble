@@ -1,6 +1,6 @@
 //import 'package:app/pages/chat_interface.dart';
 import 'package:app/pages/splash_screen.dart';
-import 'package:app/viewmodels/matchmaking_view_model.dart';
+import 'package:app/viewmodels/main_view_model.dart';
 import 'package:provider/provider.dart';
 import 'package:app/services/firestore_service.dart';
 
@@ -48,7 +48,7 @@ class _AppState extends State<App> {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (context) => MatchmakingViewModel(FirestoreService()),
+          create: (context) => MainViewModel(FirestoreService()),
         ),
       ],
       child: MaterialApp(

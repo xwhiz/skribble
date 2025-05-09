@@ -6,7 +6,7 @@ import 'package:app/pages/exisitng_rooms.dart';
 import 'package:app/pages/game_layout.dart';
 import 'package:app/pages/join_private_room.dart';
 import 'package:flutter/material.dart';
-import 'package:app/viewmodels/matchmaking_view_model.dart';
+import 'package:app/viewmodels/main_view_model.dart';
 import 'package:app/logger.dart'; // same import
 
 class HomePage extends StatelessWidget {
@@ -15,7 +15,7 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     //Access the ViewModel
-    final viewModel = Provider.of<MatchmakingViewModel>(context);
+    final viewModel = Provider.of<MainViewModel>(context);
 
     return Scaffold(
       body: Container(

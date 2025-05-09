@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:app/models/chat_message_model.dart';
 import 'package:app/viewmodels/chat_view_model.dart';
-import 'package:app/viewmodels/matchmaking_view_model.dart';
+import 'package:app/viewmodels/main_view_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -62,7 +62,7 @@ class _ChatInterfaceState extends State<ChatInterface> {
 
   @override
   Widget build(BuildContext context) {
-    var roomViewModel = Provider.of<MatchmakingViewModel>(context);
+    var roomViewModel = Provider.of<MainViewModel>(context);
 
     final List<Color> messageColors = [
       const Color(0xFFFFD3B6),

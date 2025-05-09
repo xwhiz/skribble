@@ -4,10 +4,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/room_model.dart';
 import '../services/firestore_service.dart';
 
-class MatchmakingViewModel extends ChangeNotifier {
+class MainViewModel extends ChangeNotifier {
   final FirestoreService _firestoreService;
 
-  MatchmakingViewModel(this._firestoreService);
+  MainViewModel(this._firestoreService);
 
   RoomModel? _room;
   bool _isLoading = false;
