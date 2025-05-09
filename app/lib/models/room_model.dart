@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'player_model.dart';
 import 'chat_message_model.dart'; // Import the ChatMessage model
 
@@ -13,8 +15,11 @@ class RoomModel {
   final String? hint;
   final String? hiddenWord; // Word with dashes for players to guess
   final String? timeLeft; // Formatted time left "01:25"
+  final bool? isPrivate;
   final List<PlayerModel>? players;
   final List<ChatMessage>? messages; // New field for player messages
+  final int? roundDuration;
+  final Timestamp? createAt;
 
   RoomModel({
     required this.roomCode,
@@ -28,8 +33,11 @@ class RoomModel {
     this.hint,
     this.hiddenWord,
     this.timeLeft,
+    this.isPrivate,
     this.players,
     this.messages, // Initialize playerMessages
+    this.roundDuration,
+    this.createAt,
   });
 
   factory RoomModel.fromJson(Map<String, dynamic> json) {
@@ -62,8 +70,12 @@ class RoomModel {
       hint: json['hint'],
       hiddenWord: json['hiddenWord'],
       timeLeft: json['timeLeft'],
+      isPrivate: json['isPrivate'] ?? false,
       players: playersList,
-      messages: messages, // Pass playerMessagesMap
+      roundDuration: json['roundDuration'],
+      messages: messages,
+      createAt:
+          json['createAt'] != null ? (json['createAt'] as Timestamp) : null,
     );
   }
 }

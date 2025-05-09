@@ -2,6 +2,7 @@ import 'package:app/data/constants.dart';
 import 'package:app/models/chat_message_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:app/data/constants.dart';
 import 'dart:math';
 
 class FirestoreService {
@@ -60,46 +61,10 @@ class FirestoreService {
     }
   }
 
-  // // Get real-time updates from the playerbook collection
-  // Stream<QuerySnapshot> getMessages() {
-  //   return playerbookCollection
-  //       .orderBy('timestamp', descending: true)
-  //       .snapshots();
-  // }
-
-  // Stream<List<ChatMessage>> getMessagesFromFirestoreStream(
-  //   String roomId,
-  //   String playerId,
-  //   Timestamp loginTime,
-  // ) {
-  //   return FirebaseFirestore.instance
-  //       .collection(K.roomCollection)
-  //       .doc(roomId)
-  //       // .collection('players')
-  //       // .doc(playerId) // Reference to the specific player
-  //       // .collection('playerMessages') // The player's messages collection
-  //       // .orderBy('timestamp', descending: true)
-  //       // .snapshots()
-  //       // .map((snapshot) {
-  //       //   return snapshot.docs
-  //       //       .where(
-  //       //         (doc) =>
-  //       //             doc.data().containsKey('timestamp') &&
-  //       //             (doc.data()['timestamp'] as Timestamp).compareTo(
-  //       //                   loginTime,
-  //       //                 ) >
-  //       //                 0,
-  //       //       )
-  //       //       .map((doc) => ChatMessage.fromDocument(doc))
-  //       //       .toList();
-  //       // });
-  // }
-
   // Join a room or create a new one if no rooms are available
-  Future<Map<String, dynamic>> joinRoom() async {
-    // Get current user
-
+  Future<Map<String, dynamic>> joinPublicRoom() async {
     final User? currentUser = _auth.currentUser;
+
     if (currentUser == null) {
       throw Exception('User not authenticated');
     }
@@ -109,9 +74,10 @@ class FirestoreService {
       // try {
       var availableRooms =
           await _db
-              .collection(K.roomCollection)
+              .collection('Room')
               .where('status', isEqualTo: 'waiting')
-              .where('currentPlayers', isLessThan: 8)
+              .where('isPrivate', isEqualTo: false)
+              .where('currentPlayers', isLessThan: K.maxPlayers)
               .orderBy('currentPlayers', descending: true)
               .limit(1)
               .get();
@@ -152,41 +118,34 @@ class FirestoreService {
       } else {
         // Create a new room with a 6-character code
         String roomCode = _generateRoomCode();
-        DocumentReference newRoomRef = _db
-            .collection(K.roomCollection)
-            .doc(roomCode);
+        DocumentReference newRoomRef = _db.collection('Room').doc(roomCode);
         roomId = roomCode;
         isNewRoom = true;
 
         // Initialize the room
-        try {
-          transaction.set(newRoomRef, {
-            'roomCode': roomCode,
-            'status': 'waiting',
-            'maxPlayers': 8,
-            'currentPlayers': 1,
-            'createdAt': FieldValue.serverTimestamp(),
-            'currentRound': 0,
-            'totalRounds': 3,
-            'currentDrawerId': '',
-            'currentWord': '',
-            'hint': '',
-            'hiddenWord': '- - - - - -', // Default placeholder
-            'timeLeft': '60:00',
-            'messages': [],
-            'players': [
-              {
-                'userId': currentUser.uid,
-                'username': currentUser.displayName ?? 'Anonymous',
-                'joinedAt': Timestamp.now(),
-                'score': 0,
-                'isDrawing': false,
-              },
-            ],
-          });
-        } catch (e) {
-          print(e);
-        }
+        transaction.set(newRoomRef, {
+          'roomCode': roomCode,
+          'status': 'waiting',
+          'maxPlayers': 8,
+          'currentPlayers': 1,
+          'createdAt': FieldValue.serverTimestamp(),
+          'currentRound': 0,
+          'totalRounds': 3,
+          'currentDrawerId': '',
+          'currentWord': '',
+          'hint': '',
+          'hiddenWord': '- - - - - -', // Default placeholder
+          'timeLeft': '60:00',
+          'players': [
+            {
+              'userId': currentUser.uid,
+              'username': currentUser.displayName ?? 'Anonymous',
+              'joinedAt': Timestamp.now(),
+              'score': 0,
+              'isDrawing': false,
+            },
+          ],
+        });
         print("No available rooms, created a new one");
       }
 
@@ -194,8 +153,51 @@ class FirestoreService {
     });
   }
 
+  // Create a new room
+  Future<String> createRoom({
+    bool isPrivate = false,
+    int maxPlayers = K.maxPlayers,
+    int totalRounds = K.totalRounds,
+    int roundDuration = K.roundDuration,
+  }) async {
+    final User? currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw Exception('User not authenticated');
+    }
+
+    String roomCode = _generateRoomCode();
+    await _db.collection('Room').doc(roomCode).set({
+      'roomCode': roomCode,
+      'status': 'waiting',
+      'maxPlayers': maxPlayers,
+      'currentPlayers': 1,
+      'currentRound': 0,
+      'totalRounds': totalRounds,
+      'currentDrawerId': '',
+      'currentWord': '',
+      'hint': '',
+      'hiddenWord': '- - - - - -', // Default placeholder
+      'timeLeft': '$roundDuration : 00',
+      'isPrivate': isPrivate,
+      'messages': [],
+      'players': [
+        {
+          'userId': currentUser.uid,
+          'username': currentUser.displayName ?? 'Anonymous',
+          'joinedAt': DateTime.now(),
+          'score': 0,
+          'isDrawing': false,
+        },
+      ],
+      'roundDuration': roundDuration,
+      'createdAt': DateTime.now(),
+    });
+
+    return roomCode;
+  }
+
   // Join a specific room by ID (for mid-game joining)
-  Future<bool> joinSpecificRoom(String roomId) async {
+  Future<bool> joinPrivateRoom(String id) async {
     final User? currentUser = _auth.currentUser;
     if (currentUser == null) {
       throw Exception('User not authenticated');
@@ -204,7 +206,7 @@ class FirestoreService {
     try {
       // Get room data
       DocumentSnapshot roomSnapshot =
-          await _db.collection('Room').doc(roomId).get();
+          await _db.collection('Room').doc(id).get();
 
       if (!roomSnapshot.exists) {
         return false; // Room doesn't exist
@@ -229,13 +231,13 @@ class FirestoreService {
       }
 
       // Add player to room and update count
-      await _db.collection('Room').doc(roomId).update({
+      await _db.collection('Room').doc(id).update({
         'currentPlayers': FieldValue.increment(1),
         'players': FieldValue.arrayUnion([
           {
             'userId': currentUser.uid,
             'username': currentUser.displayName ?? 'Anonymous',
-            'joinedAt': FieldValue.serverTimestamp(),
+            'joinedAt': DateTime.now(),
             'score': 0,
             'isDrawing': false,
             'isReady':
@@ -349,7 +351,7 @@ class FirestoreService {
         'currentWord': word,
         'hint': hint,
         'hiddenWord': hiddenWord,
-        'gameStartTime': FieldValue.serverTimestamp(),
+        'gameStartTime': DateTime.now(),
         'timeLeft': '60:00',
       });
 

@@ -9,6 +9,7 @@ class GameLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final viewModel = Provider.of<MainViewModel>(context);
+    print("joined room with room id: ${viewModel.room?.roomCode}");
 
     return Scaffold(
       body: SafeArea(
@@ -68,17 +69,31 @@ class GameLayout extends StatelessWidget {
                   ),
 
                   // Right side: Hint
-                  Padding(
-                    padding: const EdgeInsets.only(right: 10),
-                    child: Text(
-                      'Hint: [word]', // Replace with actual dynamic hint
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        fontFamily: 'ComicNeue',
+                  Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(right: 10),
+                        child: Text(
+                          'Hint: [word]', // Replace with actual dynamic hint
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            fontFamily: 'ComicNeue',
+                          ),
+                        ),
                       ),
-                    ),
+                      IconButton(
+                        onPressed: () {
+                          viewModel.leaveRoom();
+                          Navigator.pop(context);
+                        },
+                        icon: const Icon(
+                          Icons.exit_to_app,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

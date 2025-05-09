@@ -63,7 +63,7 @@ class HomePage extends StatelessWidget {
                                       viewModel.isLoading
                                           ? null
                                           : () async {
-                                            await viewModel.joinRoom();
+                                            await viewModel.joinPublicRoom();
 
                                             // Check if joining was successful
                                             if (viewModel.room != null &&
