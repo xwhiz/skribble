@@ -54,6 +54,12 @@ class GameLayout extends StatelessWidget {
                               fontFamily: 'ComicNeue',
                             ),
                           ),
+                          ElevatedButton(
+                            onPressed: () {
+                              matchMakingViewModel.leaveRoom();
+                              Navigator.pop(context);
+                            },
+                            child: Text("Leave Room")),
                         ],
                       ),
                     ),
