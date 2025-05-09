@@ -116,36 +116,13 @@ class FirestoreService {
           ]),
         });
       } else {
-        // Create a new room with a 6-character code
-        String roomCode = _generateRoomCode();
-        DocumentReference newRoomRef = _db.collection('Room').doc(roomCode);
-        roomId = roomCode;
+        roomId = await createRoom(
+          isPrivate: false,
+          maxPlayers: K.maxPlayers,
+          totalRounds: K.totalRounds,
+          roundDuration: K.roundDuration,
+        );
         isNewRoom = true;
-
-        // Initialize the room
-        transaction.set(newRoomRef, {
-          'roomCode': roomCode,
-          'status': 'waiting',
-          'maxPlayers': 8,
-          'currentPlayers': 1,
-          'createdAt': FieldValue.serverTimestamp(),
-          'currentRound': 0,
-          'totalRounds': 3,
-          'currentDrawerId': '',
-          'currentWord': '',
-          'hint': '',
-          'hiddenWord': '- - - - - -', // Default placeholder
-          'timeLeft': '60:00',
-          'players': [
-            {
-              'userId': currentUser.uid,
-              'username': currentUser.displayName ?? 'Anonymous',
-              'joinedAt': Timestamp.now(),
-              'score': 0,
-              'isDrawing': false,
-            },
-          ],
-        });
         print("No available rooms, created a new one");
       }
 
