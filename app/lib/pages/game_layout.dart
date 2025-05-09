@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'chat_interface.dart'; // Import your ChatInterface
 import 'package:provider/provider.dart';
-import '../viewmodels/matchmaking_view_model.dart'; // Import your MatchmakingViewModel
+import '../viewmodels/main_view_model.dart'; // Import your MatchmakingViewModel
 
 class GameLayout extends StatelessWidget {
   const GameLayout({super.key});
 
   @override
   Widget build(BuildContext context) {
-
-    final matchMakingViewModel = Provider.of<MatchmakingViewModel>(context);
-    print("joined room with room id: ${matchMakingViewModel.room?.roomCode}");
+    final viewModel = Provider.of<MainViewModel>(context);
+    print("joined room with room id: ${viewModel.room?.roomCode}");
 
     return Scaffold(
       body: SafeArea(
@@ -86,7 +85,7 @@ class GameLayout extends StatelessWidget {
                       ),
                       IconButton(
                         onPressed: () {
-                          matchMakingViewModel.leaveRoom();
+                          viewModel.leaveRoom();
                           Navigator.pop(context);
                         },
                         icon: const Icon(
@@ -99,7 +98,6 @@ class GameLayout extends StatelessWidget {
                 ],
               ),
             ),
-
             Container(
               height: 20,
               color: Color.fromARGB(179, 32, 42, 53),
@@ -156,7 +154,14 @@ class GameLayout extends StatelessWidget {
                     child: ClipRRect(
                       child: Container(
                         color: Colors.blueGrey[50],
-                        child: const ChatInterface(),
+                        child:
+                            viewModel.currentRoomId != null
+                                ? ChatInterface(
+                                  roomId: viewModel.currentRoomId!,
+                                )
+                                : const Center(
+                                  child: CircularProgressIndicator(),
+                                ), // Wait if roomId is null
                       ),
                     ),
                   ),
