@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
-
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:app/pages/create_room.dart';
 import 'package:app/pages/game_layout.dart';
@@ -124,8 +124,8 @@ class HomePage extends StatelessWidget {
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
