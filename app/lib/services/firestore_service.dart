@@ -39,7 +39,7 @@ class FirestoreService {
       if (message.isNotEmpty) {
         // Send message to the room's playerMessages subcollection
         await FirebaseFirestore.instance
-            .collection('rooms')
+            .collection(K.roomCollection)
             .doc(roomId)
             .collection('players')
             .doc(playerId) // Reference to specific player
