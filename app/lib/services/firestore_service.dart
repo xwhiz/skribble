@@ -36,21 +36,25 @@ class FirestoreService {
     String playerId,
   ) async {
     try {
-      if (message.isNotEmpty) {
-        // Send message to the room's playerMessages subcollection
-        await FirebaseFirestore.instance
-            .collection(K.roomCollection)
-            .doc(roomId)
-            .collection('players')
-            .doc(playerId) // Reference to specific player
-            .collection('playerMessages') // The playerMessages subcollection
-            .add({
-              'text': message,
-              'sender': sender,
-              'timestamp': FieldValue.serverTimestamp(),
-            });
-        print('Message sent successfully!');
+      if (message.isEmpty) {
+        return;
       }
+      var docReference = FirebaseFirestore.instance
+          .collection(K.roomCollection)
+          .doc(roomId);
+
+      await docReference.update({
+        'messages': FieldValue.arrayUnion([
+          {
+            'name': sender,
+            'message': message,
+            'userId': playerId,
+            'timestamp': DateTime.now(),
+          },
+        ]),
+      });
+
+      print('Message sent successfully!');
     } catch (e) {
       print('Error sending message: $e');
     }
@@ -366,7 +370,7 @@ class FirestoreService {
 
   // Stream to listen for room updates
   Stream<DocumentSnapshot> listenToRoom(String roomId) {
-    return _db.collection('Room').doc(roomId).snapshots();
+    return _db.collection(K.roomCollection).doc(roomId).snapshots();
   }
 
   // Generate a random room code

@@ -53,6 +53,15 @@ class MainViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> sendMessage(
+    String username,
+    String message,
+    String roomCode,
+    String userId,
+  ) async {
+    await _firestoreService.sendMessage(username, message, roomCode, userId);
+  }
+
   void _subscribeToRoom(String roomId) {
     _roomStream = _firestoreService.listenToRoom(roomId);
     _roomStream!.listen((snapshot) {

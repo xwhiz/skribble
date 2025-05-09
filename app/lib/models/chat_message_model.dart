@@ -4,11 +4,13 @@ class ChatMessage {
   final String name;
   final String message;
   final Timestamp timestamp;
+  final String? userId;
 
   ChatMessage({
     required this.name,
     required this.message,
     required this.timestamp,
+    required this.userId,
   });
 
   factory ChatMessage.fromDocument(DocumentSnapshot doc) {
@@ -17,6 +19,7 @@ class ChatMessage {
       name: data['name'] ?? 'Unknown',
       message: data['message'] ?? '',
       timestamp: data['timestamp'] ?? Timestamp.now(),
+      userId: data['userId'],
     );
   }
 
@@ -26,6 +29,7 @@ class ChatMessage {
       name: json['name'] ?? 'Unknown',
       message: json['message'] ?? '',
       timestamp: json['timestamp'] ?? Timestamp.now(),
+      userId: json['userId'],
     );
   }
 

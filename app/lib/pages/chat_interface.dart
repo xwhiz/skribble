@@ -19,15 +19,13 @@ class ChatInterface extends StatefulWidget {
 class _ChatInterfaceState extends State<ChatInterface> {
   final TextEditingController messageController = TextEditingController();
   bool isSendingButton = false; // Track sending status for button
-  late ChatViewModel chatViewModel;
 
   @override
   void initState() {
     super.initState();
-    chatViewModel = ChatViewModel(roomId: widget.roomId);
   }
 
-  Future<void> sendMessage() async {
+  Future<void> sendMessage(MainViewModel vm) async {
     final String message = messageController.text.trim();
     final String userName =
         FirebaseAuth.instance.currentUser?.displayName ?? 'Anonymous';
@@ -43,13 +41,9 @@ class _ChatInterfaceState extends State<ChatInterface> {
       messageController.clear();
 
       try {
-        // Ensure the message is passed to the ViewModel or directly to Firestore with the necessary parameters
-        await chatViewModel.sendMessage(
-          message,
-          userName,
-          userId,
-          widget.roomId,
-        );
+        print("Before sending");
+        await vm.sendMessage(userName, message, widget.roomId, userId);
+        print("After sending");
       } catch (e) {
         print('Failed to send message: $e');
       } finally {
@@ -62,7 +56,9 @@ class _ChatInterfaceState extends State<ChatInterface> {
 
   @override
   Widget build(BuildContext context) {
-    var roomViewModel = Provider.of<MainViewModel>(context);
+    var mainVM = Provider.of<MainViewModel>(context);
+
+    var messages = mainVM.room?.messages;
 
     final List<Color> messageColors = [
       const Color(0xFFFFD3B6),
@@ -72,6 +68,8 @@ class _ChatInterfaceState extends State<ChatInterface> {
       const Color(0xFFF7D6E0),
       const Color(0xFFB5EAD7),
     ];
+
+    print("Messages: $messages");
 
     return Container(
       width: double.infinity,
@@ -86,55 +84,47 @@ class _ChatInterfaceState extends State<ChatInterface> {
       child: SafeArea(
         child: Column(
           children: [
-            Expanded(
-              child: StreamBuilder<List<ChatMessage>>(
-                stream: chatViewModel.getMessagesStream(
-                  roomViewModel.room!.roomCode,
-                ),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+            if (messages != null && messages.isNotEmpty)
+              Expanded(
+                child: ListView.builder(
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final messageData = messages[index];
+                    final String senderName = messageData.name;
+                    final String message = messageData.message;
 
-                  final messages = snapshot.data!;
+                    final Color bgColor =
+                        messageColors[index % messageColors.length];
 
-                  return ListView.builder(
-                    itemCount: messages.length,
-                    itemBuilder: (context, index) {
-                      final messageData = messages[index];
-                      final String senderName = messageData.name;
-                      final String message = messageData.message;
-
-                      final Color bgColor =
-                          messageColors[index % messageColors.length];
-
-                      return Align(
-                        alignment: Alignment.centerLeft,
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(
-                            vertical: 6,
-                            horizontal: 12,
-                          ),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: bgColor.withOpacity(0.8),
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          child: Text(
-                            '$senderName: $message',
-                            style: const TextStyle(
-                              color: Color.fromARGB(179, 32, 42, 53),
-                              fontSize: 16,
-                              fontFamily: 'ComicNeue',
-                            ),
+                    return Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(
+                          vertical: 6,
+                          horizontal: 12,
+                        ),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: bgColor.withOpacity(0.8),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: Text(
+                          '$senderName: $message',
+                          style: const TextStyle(
+                            color: Color.fromARGB(179, 32, 42, 53),
+                            fontSize: 16,
+                            fontFamily: 'ComicNeue',
                           ),
                         ),
-                      );
-                    },
-                  );
-                },
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
+
+            if (messages == null || messages.isEmpty)
+              Expanded(child: Center(child: Text("No messages yet"))),
+
             Padding(
               padding: const EdgeInsets.all(12),
               child: ClipRRect(
@@ -183,7 +173,7 @@ class _ChatInterfaceState extends State<ChatInterface> {
                                 Icons.send,
                                 color: Color.fromARGB(179, 32, 42, 53),
                               ),
-                              onPressed: sendMessage,
+                              onPressed: () async => await sendMessage(mainVM),
                             ),
                       ],
                     ),
