@@ -15,7 +15,7 @@ class FirestoreService {
       await playerbookCollection.add({
         'name': sender,
         'message': message,
-        'timestamp': FieldValue.serverTimestamp(),
+        'timestamp': DateTime.now(),
       });
     } catch (e) {
       // ignore: avoid_print
@@ -113,13 +113,13 @@ class FirestoreService {
         {
           'userId': currentUser.uid,
           'username': currentUser.displayName ?? 'Anonymous',
-          'joinedAt': Timestamp.now(),
+          'joinedAt': DateTime.now(),
           'score': 0,
           'isDrawing': false,
         }
       ],
       'roundDuration': roundDuration,
-      'createdAt': FieldValue.serverTimestamp(),
+      'createdAt': DateTime.now(),
     });
 
     return roomCode;
@@ -162,7 +162,7 @@ class FirestoreService {
           {
             'userId': currentUser.uid,
             'username': currentUser.displayName ?? 'Anonymous',
-            'joinedAt': FieldValue.serverTimestamp(),
+            'joinedAt': DateTime.now(),
             'score': 0,
             'isDrawing': false,
             'isReady': roomData['status'] != 'waiting', // Auto-ready if game is in progress
@@ -270,7 +270,7 @@ class FirestoreService {
         'currentWord': word,
         'hint': hint,
         'hiddenWord': hiddenWord,
-        'gameStartTime': FieldValue.serverTimestamp(),
+        'gameStartTime': DateTime.now(),
         'timeLeft': '60:00',
       });
 
