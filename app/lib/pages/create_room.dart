@@ -17,6 +17,9 @@ class _CreateRoomState extends State<CreateRoom> {
   TextEditingController wordBankController = TextEditingController();
   TextEditingController maxPlayerController = TextEditingController();
   TextEditingController roundDurationController = TextEditingController();
+  int? totalRounds;
+  int? maxPlayers;
+  int? roundDuration;
   @override
   Widget build(BuildContext context) {
     final matchMakingViewModel = Provider.of<MainViewModel>(context);
@@ -54,263 +57,139 @@ class _CreateRoomState extends State<CreateRoom> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      TextField(
-                        controller: roomNameController,
-                        decoration: InputDecoration(
-                          hintText: "Enter Room ID",
-                          hintStyle: TextStyle(
-                            color: const Color.fromARGB(179, 32, 42, 53),
-                            fontSize: 14,
-                            fontFamily: 'ComicNeue',
-                            // Applying Comic Neue font
-                          ),
-                          filled: true,
-                          // ignore: deprecated_member_use
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15),
-                            borderSide: BorderSide.none,
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15),
-                            borderSide: BorderSide(
-                              color: const Color.fromARGB(179, 32, 42, 53),
-                              width: 2,
-                            ), // Highlight effect
-                          ),
-                        ),
-                        style: TextStyle(
-                          color: Color.fromARGB(179, 32, 42, 53),
-                          fontFamily: 'ComicNeue',
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      TextField(
-                        controller: wordBankController,
-                        obscureText: true,
-                        decoration: InputDecoration(
-                          hintText: "Enter number of rounds",
-                          hintStyle: TextStyle(
-                            color: const Color.fromARGB(179, 32, 42, 53),
-                            fontSize: 14,
-                            fontFamily: 'ComicNeue', // Applying Comic Neue font
-                          ),
-                          filled: true,
-                          // ignore: deprecated_member_use
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15),
-                            borderSide: BorderSide.none,
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15),
-                            borderSide: BorderSide(
-                              color: const Color.fromARGB(179, 32, 42, 53),
-                              width: 2,
-                            ), // Highlight effect
-                          ),
-                        ),
-                        style: TextStyle(
-                          color: Color.fromARGB(179, 32, 42, 53),
-                          fontFamily: 'ComicNeue',
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-                      // Row(
-                      //   mainAxisAlignment: MainAxisAlignment.center,
-                      //   children: [
-                      //     Expanded(
-                      //       child: RadioListTile<WordBank>(
-                      //         title: const Text(
-                      //           'Easy',
-                      //           style: TextStyle(
-                      //             fontSize: 14,
-                      //             fontFamily: 'ComicNeue',
-                      //             color: Color.fromARGB(179, 32, 42, 53),
-                      //           ),
-                      //         ),
-                      //         value: WordBank.easy,
-                      //         groupValue: _wordBank,
-                      //         onChanged: (WordBank? value) {
-                      //           setState(() {
-                      //             _wordBank = value;
-                      //           });
-                      //         },
-                      //         dense: true,
-                      //         contentPadding: EdgeInsets.zero,
-                      //         activeColor: Color.fromARGB(179, 32, 42, 53),
-                      //       ),
-                      //     ),
-                      //     Expanded(
-                      //       child: RadioListTile<WordBank>(
-                      //         title: const Text(
-                      //           'Medium',
-                      //           style: TextStyle(
-                      //             fontSize: 14,
-                      //             fontFamily: 'ComicNeue',
-                      //             color: Color.fromARGB(179, 32, 42, 53),
-                      //           ),
-                      //         ),
-                      //         value: WordBank.medium,
-                      //         groupValue: _wordBank,
-                      //         onChanged: (WordBank? value) {
-                      //           setState(() {
-                      //             _wordBank = value;
-                      //           });
-                      //         },
-                      //         dense: true,
-                      //         contentPadding: EdgeInsets.zero,
-                      //         activeColor: Color.fromARGB(179, 32, 42, 53),
-                      //       ),
-                      //     ),
-                      //   ],
-                      // ),
-                      // const SizedBox(height: 10),
-                      // Row(
-                      //   mainAxisAlignment: MainAxisAlignment.center,
-                      //   children: [
-                      //     Expanded(
-                      //       child: RadioListTile<WordBank>(
-                      //         title: const Text(
-                      //           'Hard',
-                      //           style: TextStyle(
-                      //             fontSize: 14,
-                      //             fontFamily: 'ComicNeue',
-                      //             color: Color.fromARGB(179, 32, 42, 53),
-                      //           ),
-                      //         ),
-                      //         value: WordBank.hard,
-                      //         groupValue: _wordBank,
-                      //         onChanged: (WordBank? value) {
-                      //           setState(() {
-                      //             _wordBank = value;
-                      //           });
-                      //         },
-                      //         dense: true,
-                      //         contentPadding: EdgeInsets.zero,
-                      //         activeColor: Color.fromARGB(179, 32, 42, 53),
-                      //       ),
-                      //     ),
-                      //     Expanded(
-                      //       child: RadioListTile<WordBank>(
-                      //         title: const Text(
-                      //           'Custom Word Bank',
-                      //           style: TextStyle(
-                      //             fontSize: 14,
-                      //             fontFamily: 'ComicNeue',
-                      //             color: Color.fromARGB(179, 32, 42, 53),
-                      //           ),
-                      //         ),
-                      //         value: WordBank.customBank,
-                      //         groupValue: _wordBank,
-                      //         onChanged: (WordBank? value) {
-                      //           setState(() {
-                      //             _wordBank = value;
-                      //           });
-                      //         },
-                      //         dense: true,
-                      //         contentPadding: EdgeInsets.zero,
-                      //         activeColor: Color.fromARGB(179, 32, 42, 53),
-                      //       ),
-                      //     ),
-                      //   ],
-                      // ),
-                      TextField(
-                        controller: maxPlayerController,
-                        obscureText: true,
-                        decoration: InputDecoration(
-                          hintText: "Enter maximum players",
-                          hintStyle: TextStyle(
-                            color: const Color.fromARGB(179, 32, 42, 53),
-                            fontSize: 14,
-                            fontFamily: 'ComicNeue', // Applying Comic Neue font
-                          ),
-                          filled: true,
-                          // ignore: deprecated_member_use
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15),
-                            borderSide: BorderSide.none,
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15),
-                            borderSide: BorderSide(
-                              color: const Color.fromARGB(179, 32, 42, 53),
-                              width: 2,
-                            ), // Highlight effect
-                          ),
-                        ),
-                        style: TextStyle(
-                          color: Color.fromARGB(179, 32, 42, 53),
-                          fontFamily: 'ComicNeue',
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      TextField(
-                        controller: roundDurationController,
-                        obscureText: true,
-                        decoration: InputDecoration(
-                          hintText: "Enter round time duration",
-                          hintStyle: TextStyle(
-                            color: const Color.fromARGB(179, 32, 42, 53),
-                            fontSize: 14,
-                            fontFamily: 'ComicNeue', // Applying Comic Neue font
-                          ),
-                          filled: true,
-                          // ignore: deprecated_member_use
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15),
-                            borderSide: BorderSide.none,
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15),
-                            borderSide: BorderSide(
-                              color: const Color.fromARGB(179, 32, 42, 53),
-                              width: 2,
-                            ), // Highlight effect
-                          ),
-                        ),
-                        style: TextStyle(
-                          color: Color.fromARGB(179, 32, 42, 53),
-                          fontFamily: 'ComicNeue',
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: () {
-                          matchMakingViewModel.createRoom(
-                            maxPlayers: int.parse(maxPlayerController.text),
-                            roundDuration: int.parse(
-                              roundDurationController.text,
-                            ),
-                          );
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const GameLayout(),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          // ignore: deprecated_member_use
-                          backgroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 40),
-                          elevation: 0,
-                        ),
-                        child: const Text(
-                          "Create",
+                      // Total Rounds Dropdown
+                      DropdownButtonFormField<int>(
+                        value: totalRounds,
+                        decoration: _inputDecoration(),
+                        hint: Text(
+                          "Select total rounds",
                           style: TextStyle(
-                            fontSize: 16,
-                            color: Color.fromARGB(179, 32, 42, 53),
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'ComicNeue', // Applying Comic Neue font
+                            color: const Color.fromARGB(179, 32, 42, 53),
+                            fontFamily: 'ComicNeue',
+                            fontSize: 14,
+                          ),
+                        ),
+                        items:
+                            [1, 2, 3, 4, 5]
+                                .map(
+                                  (round) => DropdownMenuItem(
+                                    value: round,
+                                    child: Text('$round'),
+                                  ),
+                                )
+                                .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            totalRounds = value!;
+                          });
+                        },
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Max Players Dropdown
+                      DropdownButtonFormField<int>(
+                        value: maxPlayers,
+                        decoration: _inputDecoration(),
+                        hint: Text(
+                          "Select maximum players",
+                          style: TextStyle(
+                            color: const Color.fromARGB(179, 32, 42, 53),
+                            fontFamily: 'ComicNeue',
+                            fontSize: 14,
+                          ),
+                        ),
+                        items:
+                            [8, 12, 16]
+                                .map(
+                                  (player) => DropdownMenuItem(
+                                    value: player,
+                                    child: Text('$player'),
+                                  ),
+                                )
+                                .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            maxPlayers = value!;
+                          });
+                        },
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Round Duration Dropdown
+                      DropdownButtonFormField<int>(
+                        value: roundDuration,
+                        decoration: _inputDecoration(),
+                        hint: Text(
+                          "Select round duration",
+                          style: TextStyle(
+                            color: const Color.fromARGB(179, 32, 42, 53),
+                            fontFamily: 'ComicNeue',
+                            fontSize: 14,
+                          ),
+                        ),
+                        items:
+                            [60, 70, 80, 90, 100]
+                                .map(
+                                  (duration) => DropdownMenuItem(
+                                    value: duration,
+                                    child: Text('$duration sec'),
+                                  ),
+                                )
+                                .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            roundDuration = value!;
+                          });
+                        },
+                      ),
+
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: 400,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            if (maxPlayers != null &&
+                                roundDuration != null &&
+                                totalRounds != null) {
+                              matchMakingViewModel.createRoom(
+                                maxPlayers: maxPlayers!,
+                                roundDuration: roundDuration!,
+                              );
+
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const GameLayout(),
+                                ),
+                              );
+                            } else {
+                              // Show a dialog or snackbar
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text("Please select all options"),
+                                ),
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            minimumSize: Size.fromHeight(46),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 40),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            "Create",
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Color.fromARGB(179, 32, 42, 53),
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'ComicNeue',
+                            ),
                           ),
                         ),
                       ),
@@ -324,4 +203,23 @@ class _CreateRoomState extends State<CreateRoom> {
       ),
     );
   }
+}
+
+InputDecoration _inputDecoration() {
+  return InputDecoration(
+    isDense: true,
+    filled: true,
+    fillColor: Colors.white,
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: BorderSide.none,
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: const BorderSide(
+        color: Color.fromARGB(179, 32, 42, 53),
+        width: 2,
+      ),
+    ),
+  );
 }
