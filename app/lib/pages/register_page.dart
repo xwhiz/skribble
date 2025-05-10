@@ -100,11 +100,11 @@ class _RegisterPageState extends State<RegisterPage> {
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15),
+                            borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide.none,
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15),
+                            borderRadius: BorderRadius.circular(8),
                             borderSide: const BorderSide(
                               color: Color.fromARGB(179, 32, 42, 53),
                               width: 2,
@@ -129,11 +129,11 @@ class _RegisterPageState extends State<RegisterPage> {
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15),
+                            borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide.none,
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15),
+                            borderRadius: BorderRadius.circular(8),
                             borderSide: const BorderSide(
                               color: Color.fromARGB(179, 32, 42, 53),
                               width: 2,
@@ -159,11 +159,11 @@ class _RegisterPageState extends State<RegisterPage> {
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15),
+                            borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide.none,
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15),
+                            borderRadius: BorderRadius.circular(8),
                             borderSide: const BorderSide(
                               color: Color.fromARGB(179, 32, 42, 53),
                               width: 2,
@@ -176,38 +176,42 @@ class _RegisterPageState extends State<RegisterPage> {
                         ),
                       ),
                       const SizedBox(height: 30),
-                      ElevatedButton(
-                        onPressed: () async {
-                          await register();
-                          if (FirebaseAuth.instance.currentUser != null) {
-                            // Only navigate if login was successful
-                            Navigator.pushReplacement(
-                              // ignore: use_build_context_synchronously
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const HomePage(),
-                              ),
-                            );
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                      SizedBox(
+                        width: 400,
+
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            await register();
+                            if (FirebaseAuth.instance.currentUser != null) {
+                              // Only navigate if login was successful
+                              Navigator.pushReplacement(
+                                // ignore: use_build_context_synchronously
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const HomePage(),
+                                ),
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 50,
+                              vertical: 15,
+                            ),
+                            elevation: 0,
                           ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 50,
-                            vertical: 15,
-                          ),
-                          elevation: 0,
-                        ),
-                        child: const Text(
-                          "Register",
-                          style: TextStyle(
-                            fontSize: 24,
-                            color: Color.fromARGB(179, 32, 42, 53),
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'ComicNeue',
+                          child: const Text(
+                            "Register",
+                            style: TextStyle(
+                              fontSize: 24,
+                              color: Color.fromARGB(179, 32, 42, 53),
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'ComicNeue',
+                            ),
                           ),
                         ),
                       ),
