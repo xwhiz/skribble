@@ -1,4 +1,3 @@
-//import 'package:app/pages/chat_interface.dart';
 import 'package:app/pages/splash_screen.dart';
 import 'package:app/viewmodels/main_view_model.dart';
 import 'package:provider/provider.dart';
@@ -6,28 +5,20 @@ import 'package:app/services/firestore_service.dart';
 
 import 'firebase_options.dart';
 
-//import 'package:app/pages/home_page.dart';
 import 'package:flutter/material.dart';
-import 'package:app/pages/drawing_board_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    // Add debug output
     print("Initializing Firebase...");
-
-    // Try initializing with options
     await Firebase.initializeApp(
-      // You may need Firebase options here if auto-detection fails
       options: DefaultFirebaseOptions.currentPlatform,
     );
-
     print("Firebase initialized successfully!");
   } catch (e) {
     print("Error initializing Firebase: $e");
-    // Continue without Firebase for debugging
   }
 
   runApp(MyApp());
