@@ -286,9 +286,6 @@ class _DrawingBoardPageState extends State<DrawingBoardPage> {
   @override
   void initState() {
     super.initState();
-    print("Drawing Board initializing with userId: $_currentUserId");
-    print("Username: $_username");
-
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       setState(() {
         if (_seconds > 0)
@@ -307,10 +304,8 @@ class _DrawingBoardPageState extends State<DrawingBoardPage> {
     // Start listening for updates from other users
     listenForUpdates();
 
-    // Wait a bit before setting up drawing session to ensure Firebase is connected
-    Future.delayed(Duration(milliseconds: 500), () {
-      _setupDrawingSession();
-    });
+    // Setup drawing roles
+    _setupDrawingSession();
   }
 
   @override
@@ -365,7 +360,6 @@ class _DrawingBoardPageState extends State<DrawingBoardPage> {
   }
 
   void _setupDrawingSession() async {
-    print("Setting up drawing session...");
     try {
       // First, check if there's an active drawing session
       final docRef =
@@ -379,21 +373,16 @@ class _DrawingBoardPageState extends State<DrawingBoardPage> {
           // There's an active drawer
           setState(() {
             _currentDrawerId = data['currentDrawerId'];
-            _activeDrawerName = data['currentDrawerName'] ?? 'Unknown';
             _isDrawingTurn = _currentDrawerId == _currentUserId;
             _isObserver = !_isDrawingTurn;
           });
 
-          print(
-              "Current drawer is: ${data['currentDrawerName'] ?? 'Unknown'} (ID: ${data['currentDrawerId']})");
-          print("My turn? $_isDrawingTurn");
+          print("Current drawer is: ${data['currentDrawerName'] ?? 'Unknown'}");
         } else {
-          print("No active drawer found, trying to become one");
           // No active drawer, try to become one
           _claimDrawingTurn();
         }
       } else {
-        print("Game document doesn't exist yet, trying to become first drawer");
         // Document doesn't exist yet, try to become the first drawer
         _claimDrawingTurn();
       }
@@ -402,117 +391,43 @@ class _DrawingBoardPageState extends State<DrawingBoardPage> {
     }
   }
 
+// Add this to claim drawing turn
   void _claimDrawingTurn() async {
-    print("Attempting to claim drawing turn...");
-
     try {
-      // First check if there's already a drawer
-      final docRef =
-          FirebaseFirestore.instance.collection('games').doc('game-id');
-      final snapshot = await docRef.get();
+      // Try to become the drawer using a transaction for atomicity
+      FirebaseFirestore.instance.runTransaction((transaction) async {
+        final docRef =
+            FirebaseFirestore.instance.collection('games').doc('game-id');
+        final snapshot = await transaction.get(docRef);
 
-      if (!snapshot.exists ||
-          snapshot.data() == null ||
-          snapshot.data()!['currentDrawerId'] == null) {
-        // No active drawer, claim the turn directly
-        await docRef.set({
-          'currentDrawerId': _currentUserId,
-          'currentDrawerName': _username,
-          'turnStartedAt': DateTime.now().millisecondsSinceEpoch,
-        }, SetOptions(merge: true));
+        // Only claim if no one is currently drawing or if the drawer is this user
+        if (!snapshot.exists ||
+            snapshot.data()?['currentDrawerId'] == null ||
+            snapshot.data()?['currentDrawerId'] == _currentUserId) {
+          transaction.set(
+              docRef,
+              {
+                'currentDrawerId': _currentUserId,
+                'currentDrawerName': _username,
+                'turnStartedAt': DateTime.now().millisecondsSinceEpoch,
+              },
+              SetOptions(merge: true));
 
-        setState(() {
-          _currentDrawerId = _currentUserId;
-          _isDrawingTurn = true;
-          _isObserver = false;
-          _activeDrawerName = _username;
-        });
+          // Update local state
+          setState(() {
+            _currentDrawerId = _currentUserId;
+            _isDrawingTurn = true;
+            _isObserver = false;
+          });
 
-        print("Successfully claimed drawing turn as first drawer");
-      } else if (snapshot.data()!['currentDrawerId'] == _currentUserId) {
-        // This user is already the drawer, just update the state
-        setState(() {
-          _isDrawingTurn = true;
-          _isObserver = false;
-        });
-
-        print("Already the active drawer");
-      } else {
-        // Someone else is already drawing
-        setState(() {
-          _currentDrawerId = snapshot.data()!['currentDrawerId'];
-          _activeDrawerName = snapshot.data()!['currentDrawerName'];
-          _isDrawingTurn = false;
-          _isObserver = true;
-        });
-
-        print(
-            "Cannot claim turn: ${_activeDrawerName ?? 'Someone else'} is already drawing");
-
-        // Show a message to the user
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                "${_activeDrawerName ?? 'Someone else'} is currently drawing"),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
+          print("Successfully claimed drawing turn");
+        } else {
+          // Someone else is drawing
+          print("Someone else is currently drawing");
+        }
+      });
     } catch (e) {
       print("Error claiming drawing turn: $e");
-      // Try again with a simpler approach if transaction failed
-      _forceClaimDrawingTurn();
-    }
-  }
-
-// Replace your existing _forceClaimDrawingTurn method with this one
-  void _forceClaimDrawingTurn() async {
-    print("FORCE-claiming drawing turn...");
-
-    try {
-      final docRef =
-          FirebaseFirestore.instance.collection('games').doc('game-id');
-
-      // First, clear any existing drawing data to start fresh
-      await docRef.set({
-        'currentDrawerId': _currentUserId,
-        'currentDrawerName': _username,
-        'turnStartedAt': DateTime.now().millisecondsSinceEpoch,
-        'drawing': {
-          'elements': [],
-          'timestamp': DateTime.now().millisecondsSinceEpoch,
-        },
-      });
-
-      setState(() {
-        _currentDrawerId = _currentUserId;
-        _isDrawingTurn = true;
-        _isObserver = false;
-        _activeDrawerName = _username;
-        _elements.clear(); // Clear local elements too
-      });
-
-      print("Successfully FORCE-claimed drawing turn");
-
-      // Show confirmation
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("You've forcefully taken control of drawing"),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
-      );
-    } catch (e) {
-      print("Error force-claiming drawing turn: $e");
-
-      // Show error
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Failed to take control: $e"),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
     }
   }
 
@@ -578,7 +493,7 @@ class _DrawingBoardPageState extends State<DrawingBoardPage> {
     }
   }
 
-// Replace your listenForUpdates method with this version
+// Listen for updates
   void listenForUpdates() {
     print("Starting to listen for drawing updates from Firebase");
     FirebaseFirestore.instance
@@ -592,26 +507,11 @@ class _DrawingBoardPageState extends State<DrawingBoardPage> {
 
           // Update drawer information
           if (data != null && data['currentDrawerId'] != null) {
-            final newDrawerId = data['currentDrawerId'];
-            final newDrawerName = data['currentDrawerName'] ?? 'Unknown';
-
-            print("Current drawer update: $newDrawerName (ID: $newDrawerId)");
-            print("My user ID: $_currentUserId");
-
             setState(() {
-              _currentDrawerId = newDrawerId;
-              _activeDrawerName = newDrawerName;
-              _isDrawingTurn = newDrawerId == _currentUserId;
+              _currentDrawerId = data['currentDrawerId'];
+              _activeDrawerName = data['currentDrawerName'] ?? 'Unknown';
+              _isDrawingTurn = _currentDrawerId == _currentUserId;
               _isObserver = !_isDrawingTurn;
-            });
-
-            print("Am I drawing? $_isDrawingTurn");
-          } else if (data != null && data['currentDrawerId'] == null) {
-            // No active drawer
-            print("No active drawer found in Firestore");
-            setState(() {
-              _currentDrawerId = null;
-              _activeDrawerName = null;
             });
           }
 
@@ -631,8 +531,6 @@ class _DrawingBoardPageState extends State<DrawingBoardPage> {
               });
             }
           }
-        } else {
-          print("Game document does not exist yet");
         }
       },
       onError: (e) => print('Error listening to drawing updates: $e'),
@@ -909,15 +807,12 @@ class _DrawingBoardPageState extends State<DrawingBoardPage> {
           );
         }),
 
-        // Replace your existing button code with this improved version
+        // Add this below the canvas in your Stack
         if (_currentDrawerId == null)
           Align(
             alignment: Alignment.center,
             child: ElevatedButton(
-              onPressed: () {
-                print("Take turn button pressed");
-                _claimDrawingTurn();
-              },
+              onPressed: _claimDrawingTurn,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -925,29 +820,6 @@ class _DrawingBoardPageState extends State<DrawingBoardPage> {
               child: Text(
                 "Take your turn to draw!",
                 style: TextStyle(fontSize: 16),
-              ),
-            ),
-          ),
-
-        // Add this after your existing "Take your turn" button in the build method
-        if (_currentDrawerId != null)
-          Align(
-            alignment: Alignment.center,
-            child: Container(
-              margin: EdgeInsets.only(top: 120), // Position below other content
-              child: ElevatedButton(
-                onPressed: () {
-                  print("FORCE taking drawing turn");
-                  _forceClaimDrawingTurn();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                ),
-                child: Text(
-                  "FORCE Take Turn (Override)",
-                  style: TextStyle(fontSize: 16, color: Colors.white),
-                ),
               ),
             ),
           ),
