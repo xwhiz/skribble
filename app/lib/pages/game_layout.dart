@@ -1,10 +1,10 @@
+import 'package:app/services/firestore_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:app/viewmodels/main_view_model.dart';
 import 'package:app/viewmodels/drawing_view_model.dart';
 import 'package:app/widgets/drawing_board_widget.dart';
 import 'package:app/widgets/chat_widget.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 
@@ -26,6 +26,9 @@ class _GameLayoutState extends State<GameLayout>
   @override
   void initState() {
     super.initState();
+
+    FirestoreService()
+        .uploadWordsToFirestore(); // Only run once during development
     // Start timer
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
