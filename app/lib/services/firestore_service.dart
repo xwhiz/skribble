@@ -33,6 +33,26 @@ class FirestoreService {
   //     print('Error sending message: $e');
   //   }
   // }
+  // Future<void> uploadWordsToFirestore() async {
+  //   // Load the JSON file
+  //   final String jsonString =
+  //       await rootBundle.loadString('assets/wordbank.json');
+
+  //   // Parse JSON as a list
+  //   final List<dynamic> wordsList = json.decode(jsonString);
+
+  //   // Reference to the collection and document
+  //   final CollectionReference wordBankRef =
+  //       FirebaseFirestore.instance.collection('wordbank');
+
+  //   // Add the entire list into a single document
+  //   await wordBankRef.doc('wordsList').set({
+  //     'words': wordsList,
+  //     'timestamp': FieldValue.serverTimestamp(), // Optional
+  //   });
+
+  //   print('All words uploaded in one document!');
+  // }
 
   Future<void> sendMessage(
     String sender,
