@@ -12,6 +12,7 @@ class FirestoreService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   // Collection reference
   CollectionReference get playerbookCollection => _db.collection('playerbook');
+  CollectionReference get wordBankRef => _db.collection('wordbank');
   String userName =
       FirebaseAuth.instance.currentUser?.displayName ?? 'Unknown User';
 
@@ -39,10 +40,6 @@ class FirestoreService {
 
     // Parse JSON
     final List<dynamic> wordsList = json.decode(jsonString);
-
-    // Reference to Firestore collection
-    final CollectionReference wordBankRef =
-        FirebaseFirestore.instance.collection('wordbank');
 
     // Upload each word
     for (var word in wordsList) {
