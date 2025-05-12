@@ -44,13 +44,5 @@ flutter:
 
   assets:
     - assets/images/splash_lottie.json
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
     - assets/wordbank.json
    
->>>>>>> 1304c50 (build: add wordbank json file)
-=======
-    - assets/wordbank.json
-   
->>>>>>> 1304c50d7811a0bc00fba252c4e3137b2f1e9799
