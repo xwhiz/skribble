@@ -152,7 +152,7 @@ class FirestoreService {
       'currentWord': '',
       'hint': '',
       'hiddenWord': '- - - - - -', // Default placeholder
-      'timeLeft': '$roundDuration : 00',
+      'currentDrawingStart': '$roundDuration : 00',
       'isPrivate': isPrivate,
       'messages': [],
       'players': [
