@@ -40,9 +40,8 @@ class FirestoreService {
       if (message.isEmpty) {
         return;
       }
-      var docReference = FirebaseFirestore.instance
-          .collection(K.roomCollection)
-          .doc(roomId);
+      var docReference =
+          FirebaseFirestore.instance.collection(K.roomCollection).doc(roomId);
 
       await docReference.update({
         'messages': FieldValue.arrayUnion([
@@ -72,15 +71,14 @@ class FirestoreService {
     return _db.runTransaction<Map<String, dynamic>>((transaction) async {
       // Check for available rooms (status: 'waiting', not full)
       // try {
-      var availableRooms =
-          await _db
-              .collection('Room')
-              .where('status', isEqualTo: 'waiting')
-              .where('isPrivate', isEqualTo: false)
-              .where('currentPlayers', isLessThan: K.maxPlayers)
-              .orderBy('currentPlayers', descending: true)
-              .limit(1)
-              .get();
+      var availableRooms = await _db
+          .collection('Room')
+          .where('status', isEqualTo: 'waiting')
+          .where('isPrivate', isEqualTo: false)
+          .where('currentPlayers', isLessThan: K.maxPlayers)
+          .orderBy('currentPlayers', descending: true)
+          .limit(1)
+          .get();
       print('Available rooms: ${availableRooms.docs.length}');
       // print(availableRooms);
       // } catch (e, stack) {
@@ -168,6 +166,11 @@ class FirestoreService {
       ],
       'roundDuration': roundDuration,
       'createdAt': DateTime.now(),
+      'drawing': {
+        'elements': [],
+        'lastUpdatedBy': '',
+        'lastUpdatedAt': DateTime.now(),
+      },
     });
 
     return roomCode;
@@ -217,8 +220,7 @@ class FirestoreService {
             'joinedAt': DateTime.now(),
             'score': 0,
             'isDrawing': false,
-            'isReady':
-                roomData['status'] !=
+            'isReady': roomData['status'] !=
                 'waiting', // Auto-ready if game is in progress
           },
         ]),
@@ -333,10 +335,9 @@ class FirestoreService {
       });
 
       // Update the drawer status in players array
-      List<dynamic> updatedPlayers =
-          players.map((player) {
-            return {...player, 'isDrawing': player['userId'] == drawerId};
-          }).toList();
+      List<dynamic> updatedPlayers = players.map((player) {
+        return {...player, 'isDrawing': player['userId'] == drawerId};
+      }).toList();
 
       await roomRef.update({'players': updatedPlayers});
 
@@ -350,6 +351,67 @@ class FirestoreService {
   // Stream to listen for room updates
   Stream<DocumentSnapshot> listenToRoom(String roomId) {
     return _db.collection(K.roomCollection).doc(roomId).snapshots();
+  }
+
+  // Sync drawing with Firebase
+  Future<void> syncDrawing(
+      String roomId, List<Map<String, dynamic>> elements, String userId) async {
+    try {
+      await _db.collection('Room').doc(roomId).update({
+        'drawing': {
+          'elements': elements,
+          'lastUpdatedBy': userId,
+          'lastUpdatedAt': DateTime.now(),
+        }
+      });
+    } catch (e) {
+      print('Error syncing drawing: $e');
+      throw e;
+    }
+  }
+
+  // Claim drawing turn - make this user the current drawer
+  Future<void> claimDrawingTurn(String roomId, String userId) async {
+    try {
+      DocumentReference roomRef = _db.collection('Room').doc(roomId);
+      DocumentSnapshot roomSnapshot = await roomRef.get();
+
+      if (!roomSnapshot.exists) {
+        throw Exception('Room not found');
+      }
+
+      await roomRef.update({
+        'currentDrawerId': userId,
+        'drawing': {
+          'elements': [],
+          'lastUpdatedBy': userId,
+          'lastUpdatedAt': DateTime.now(),
+        }
+      });
+    } catch (e) {
+      print('Error claiming drawing turn: $e');
+      throw e;
+    }
+  }
+
+  // Release drawing turn
+  Future<void> releaseDrawingTurn(String roomId, String userId) async {
+    try {
+      DocumentReference roomRef = _db.collection('Room').doc(roomId);
+      DocumentSnapshot roomSnapshot = await roomRef.get();
+
+      if (!roomSnapshot.exists) {
+        throw Exception('Room not found');
+      }
+
+      Map<String, dynamic>? data = roomSnapshot.data() as Map<String, dynamic>?;
+      if (data != null && data['currentDrawerId'] == userId) {
+        await roomRef.update({'currentDrawerId': ''});
+      }
+    } catch (e) {
+      print('Error releasing drawing turn: $e');
+      throw e;
+    }
   }
 
   // Generate a random room code

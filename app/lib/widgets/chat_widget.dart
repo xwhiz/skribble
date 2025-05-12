@@ -4,75 +4,89 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class ChatWidget extends StatefulWidget {
-  const ChatWidget({Key? key}) : super(key: key);
+  final String roomId;
+
+  const ChatWidget({Key? key, required this.roomId}) : super(key: key);
 
   @override
   State<ChatWidget> createState() => _ChatWidgetState();
 }
 
 class _ChatWidgetState extends State<ChatWidget> {
-  final TextEditingController messageController = TextEditingController();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  late Timestamp loginTimestamp;
-  bool isSendingButton = false;
+  late Timestamp _loginTimestamp;
+  bool _isSending = false;
 
   @override
   void initState() {
     super.initState();
-    loginTimestamp = Timestamp.now();
+    _loginTimestamp = Timestamp.now();
   }
 
   @override
   void dispose() {
-    messageController.dispose();
+    _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
-  Future<void> sendMessage() async {
-    final String message = messageController.text.trim();
-    // Generate a random name if not signed in
-    final String userName = FirebaseAuth.instance.currentUser?.displayName ??
+  Future<void> _sendMessage() async {
+    final String message = _messageController.text.trim();
+    if (message.isEmpty) return;
+
+    final User? currentUser = _auth.currentUser;
+    final String userName = currentUser?.displayName ??
         'User-${(DateTime.now().millisecondsSinceEpoch % 10000)}';
 
-    if (message.isNotEmpty) {
-      setState(() {
-        isSendingButton = true;
+    setState(() {
+      _isSending = true;
+    });
+
+    _messageController.clear();
+
+    try {
+      // Get current room document
+      DocumentReference roomRef =
+          _firestore.collection('Room').doc(widget.roomId);
+
+      // Create message with client-side timestamp (will still be ordered properly)
+      final messageData = {
+        'userId': currentUser?.uid ?? 'anonymous',
+        'username': userName,
+        'content': message,
+        'timestamp': Timestamp
+            .now(), // Use client timestamp instead of serverTimestamp()
+      };
+
+      // Add message to room's messages array
+      await roomRef.update({
+        'messages': FieldValue.arrayUnion([messageData])
       });
 
-      messageController.clear();
-
-      try {
-        await _firestore.collection('playerbook').add({
-          'name': userName,
-          'message': message,
-          'timestamp': FieldValue.serverTimestamp(),
-        });
-
-        // Scroll to bottom after sending
-        Future.delayed(Duration(milliseconds: 300), () {
-          if (_scrollController.hasClients) {
-            _scrollController.animateTo(
-              _scrollController.position.maxScrollExtent,
-              duration: Duration(milliseconds: 300),
-              curve: Curves.easeOut,
-            );
-          }
-        });
-      } catch (e) {
-        print('Failed to send message: $e');
-      } finally {
-        setState(() {
-          isSendingButton = false;
-        });
-      }
+      // Auto-scroll to bottom
+      Future.delayed(Duration(milliseconds: 300), () {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    } catch (e) {
+      print('Failed to send message: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to send message')),
+      );
+    } finally {
+      setState(() {
+        _isSending = false;
+      });
     }
-  }
-
-  Stream<QuerySnapshot> getMessages() {
-    return _firestore.collection('playerbook').orderBy('timestamp').snapshots();
   }
 
   @override
@@ -90,18 +104,25 @@ class _ChatWidgetState extends State<ChatWidget> {
       children: [
         // Chat messages
         Expanded(
-          child: StreamBuilder<QuerySnapshot>(
-            stream: getMessages(),
+          child: StreamBuilder<DocumentSnapshot>(
+            stream:
+                _firestore.collection('Room').doc(widget.roomId).snapshots(),
             builder: (context, snapshot) {
               if (!snapshot.hasData) {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              final messages = snapshot.data!.docs;
-              final filteredMessages = messages.where((msg) {
-                final Timestamp messageTimestamp =
-                    msg['timestamp'] ?? Timestamp(0, 0);
-                return messageTimestamp.compareTo(loginTimestamp) >= 0;
+              final data = snapshot.data!.data() as Map<String, dynamic>?;
+              if (data == null) {
+                return const Center(child: Text('Room not found'));
+              }
+
+              final messages = (data['messages'] as List<dynamic>? ?? [])
+                  .map((msg) => _ChatMessage.fromJson(msg))
+                  .where((msg) {
+                // Only show messages after login
+                final messageTimestamp = msg.timestamp ?? Timestamp.now();
+                return messageTimestamp.compareTo(_loginTimestamp) >= 0;
               }).toList();
 
               // Auto-scroll to bottom when new messages arrive
@@ -115,61 +136,60 @@ class _ChatWidgetState extends State<ChatWidget> {
                 }
               });
 
-              return ListView.builder(
-                controller: _scrollController,
-                itemCount: filteredMessages.length,
-                itemBuilder: (context, index) {
-                  final messageData = filteredMessages[index];
-                  final String senderName = messageData['name'];
-                  final String message = messageData['message'];
+              return messages.isEmpty
+                  ? Center(child: Text('No messages yet'))
+                  : ListView.builder(
+                      controller: _scrollController,
+                      itemCount: messages.length,
+                      itemBuilder: (context, index) {
+                        final message = messages[index];
+                        final Color bgColor =
+                            messageColors[index % messageColors.length];
 
-                  final Color bgColor =
-                      messageColors[index % messageColors.length];
-
-                  return Align(
-                    alignment: Alignment.centerLeft,
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(
-                        vertical: 4,
-                        horizontal: 8,
-                      ),
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: bgColor.withOpacity(0.8),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            senderName,
-                            style: TextStyle(
-                              color: Color.fromARGB(255, 32, 42, 53),
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
+                        return Align(
+                          alignment: Alignment.centerLeft,
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(
+                              vertical: 4,
+                              horizontal: 8,
+                            ),
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: bgColor.withOpacity(0.8),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  message.username,
+                                  style: TextStyle(
+                                    color: Color.fromARGB(255, 32, 42, 53),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  message.content,
+                                  style: TextStyle(
+                                    color: Color.fromARGB(179, 32, 42, 53),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          SizedBox(height: 2),
-                          Text(
-                            message,
-                            style: TextStyle(
-                              color: Color.fromARGB(179, 32, 42, 53),
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              );
+                        );
+                      },
+                    );
             },
           ),
         ),
 
         // Input area
         Container(
-          height: 50, // Fixed height to prevent overflow
+          height: 50,
           decoration: BoxDecoration(
             color: Colors.white,
             border: Border(top: BorderSide(color: Colors.grey.shade300)),
@@ -180,7 +200,7 @@ class _ChatWidgetState extends State<ChatWidget> {
             children: [
               Expanded(
                 child: TextField(
-                  controller: messageController,
+                  controller: _messageController,
                   decoration: InputDecoration(
                     hintText: 'Type guess here...',
                     border: OutlineInputBorder(
@@ -191,24 +211,53 @@ class _ChatWidgetState extends State<ChatWidget> {
                     fillColor: Colors.grey.shade100,
                     contentPadding:
                         EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    isDense: true, // Makes the field smaller
+                    isDense: true,
                   ),
-                  style: TextStyle(fontSize: 14), // Smaller text
-                  onSubmitted: (_) => sendMessage(),
+                  style: TextStyle(fontSize: 14),
+                  onSubmitted: (_) => _sendMessage(),
                 ),
               ),
               IconButton(
-                icon: Icon(Icons.send, size: 20), // Smaller icon
-                onPressed: sendMessage,
+                icon: _isSending
+                    ? SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(Icons.send, size: 20),
+                onPressed: _isSending ? null : _sendMessage,
                 color: Colors.blue,
-                padding: EdgeInsets.all(4), // Smaller padding
-                constraints: BoxConstraints(
-                    minWidth: 36, minHeight: 36), // Smaller constraints
+                padding: EdgeInsets.all(4),
+                constraints: BoxConstraints(minWidth: 36, minHeight: 36),
               ),
             ],
           ),
         ),
       ],
+    );
+  }
+}
+
+// Simple internal chat message class
+class _ChatMessage {
+  final String userId;
+  final String username;
+  final String content;
+  final Timestamp? timestamp;
+
+  _ChatMessage({
+    required this.userId,
+    required this.username,
+    required this.content,
+    this.timestamp,
+  });
+
+  factory _ChatMessage.fromJson(Map<String, dynamic> json) {
+    return _ChatMessage(
+      userId: json['userId'] as String? ?? 'anonymous',
+      username: json['username'] as String? ?? 'Anonymous',
+      content: json['content'] as String? ?? '',
+      timestamp: json['timestamp'] as Timestamp?,
     );
   }
 }

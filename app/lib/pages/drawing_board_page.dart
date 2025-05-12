@@ -5,9 +5,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
-//=== DrawMode enum ==========================================================
-enum DrawMode { pencil, line, rectangle, circle, fill, eraser }
+import 'package:app/models/enums/draw_mode.dart';
 
 //=== Strategy API & Context =================================================
 abstract class Tool {

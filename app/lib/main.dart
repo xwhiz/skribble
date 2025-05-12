@@ -21,7 +21,7 @@ Future<void> main() async {
     print("Error initializing Firebase: $e");
   }
 
-  runApp(MyApp());
+  runApp(App());
 }
 
 class App extends StatefulWidget {
