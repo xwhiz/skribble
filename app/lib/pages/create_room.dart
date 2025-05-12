@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:app/pages/game_layout.dart';
+import 'package:app/services/firestore_service.dart';
 import 'package:app/viewmodels/main_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -20,6 +21,14 @@ class _CreateRoomState extends State<CreateRoom> {
   int? totalRounds;
   int? maxPlayers;
   int? roundDuration;
+
+  @override
+  void initState() {
+    super.initState();
+    FirestoreService()
+        .uploadWordsToFirestore(); // Only run once during development
+  }
+
   @override
   Widget build(BuildContext context) {
     final matchMakingViewModel = Provider.of<MainViewModel>(context);
@@ -69,15 +78,14 @@ class _CreateRoomState extends State<CreateRoom> {
                             fontSize: 14,
                           ),
                         ),
-                        items:
-                            [1, 2, 3, 4, 5]
-                                .map(
-                                  (round) => DropdownMenuItem(
-                                    value: round,
-                                    child: Text('$round'),
-                                  ),
-                                )
-                                .toList(),
+                        items: [1, 2, 3, 4, 5]
+                            .map(
+                              (round) => DropdownMenuItem(
+                                value: round,
+                                child: Text('$round'),
+                              ),
+                            )
+                            .toList(),
                         onChanged: (value) {
                           setState(() {
                             totalRounds = value!;
@@ -99,15 +107,14 @@ class _CreateRoomState extends State<CreateRoom> {
                             fontSize: 14,
                           ),
                         ),
-                        items:
-                            [8, 12, 16]
-                                .map(
-                                  (player) => DropdownMenuItem(
-                                    value: player,
-                                    child: Text('$player'),
-                                  ),
-                                )
-                                .toList(),
+                        items: [8, 12, 16]
+                            .map(
+                              (player) => DropdownMenuItem(
+                                value: player,
+                                child: Text('$player'),
+                              ),
+                            )
+                            .toList(),
                         onChanged: (value) {
                           setState(() {
                             maxPlayers = value!;
@@ -129,15 +136,14 @@ class _CreateRoomState extends State<CreateRoom> {
                             fontSize: 14,
                           ),
                         ),
-                        items:
-                            [60, 70, 80, 90, 100]
-                                .map(
-                                  (duration) => DropdownMenuItem(
-                                    value: duration,
-                                    child: Text('$duration sec'),
-                                  ),
-                                )
-                                .toList(),
+                        items: [60, 70, 80, 90, 100]
+                            .map(
+                              (duration) => DropdownMenuItem(
+                                value: duration,
+                                child: Text('$duration sec'),
+                              ),
+                            )
+                            .toList(),
                         onChanged: (value) {
                           setState(() {
                             roundDuration = value!;
