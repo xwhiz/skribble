@@ -23,13 +23,6 @@ class _CreateRoomState extends State<CreateRoom> {
   int? roundDuration;
 
   @override
-  void initState() {
-    super.initState();
-    FirestoreService()
-        .uploadWordsToFirestore(); // Only run once during development
-  }
-
-  @override
   Widget build(BuildContext context) {
     final matchMakingViewModel = Provider.of<MainViewModel>(context);
 
