@@ -1,8 +1,10 @@
 import 'package:app/data/constants.dart';
-import 'package:app/models/chat_message_model.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:app/data/constants.dart';
+
+import 'dart:convert';
+import 'package:flutter/services.dart' show rootBundle;
 import 'dart:math';
 
 class FirestoreService {
@@ -30,6 +32,29 @@ class FirestoreService {
   //     print('Error sending message: $e');
   //   }
   // }
+  Future<void> uploadWordsToFirestore() async {
+    // Load the JSON file
+    final String jsonString =
+        await rootBundle.loadString('assets/wordbank.json');
+
+    // Parse JSON
+    final List<dynamic> wordsList = json.decode(jsonString);
+
+    // Reference to Firestore collection
+    final CollectionReference wordBankRef =
+        FirebaseFirestore.instance.collection('wordbank');
+
+    // Upload each word
+    for (var word in wordsList) {
+      await wordBankRef.add({
+        'word': word,
+        'timestamp': FieldValue.serverTimestamp(), // Optional field
+      });
+    }
+
+    print('Words uploaded to Firestore!');
+  }
+
   Future<void> sendMessage(
     String sender,
     String message,
