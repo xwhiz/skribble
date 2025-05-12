@@ -14,7 +14,7 @@ class RoomModel {
   final String? currentWord;
   final String? hint;
   final String? hiddenWord; // Word with dashes for players to guess
-  final String? timeLeft; // Formatted time left "01:25"
+  final Timestamp? currentDrawingStart; // Formatted time left "01:25"
   final bool? isPrivate;
   final List<PlayerModel>? players;
   final List<ChatMessage>? messages; // New field for player messages
@@ -32,7 +32,7 @@ class RoomModel {
     this.currentWord,
     this.hint,
     this.hiddenWord,
-    this.timeLeft,
+    this.currentDrawingStart,
     this.isPrivate,
     this.players,
     this.messages, // Initialize playerMessages
@@ -69,7 +69,7 @@ class RoomModel {
       currentWord: json['currentWord'],
       hint: json['hint'],
       hiddenWord: json['hiddenWord'],
-      timeLeft: json['timeLeft'],
+      currentDrawingStart: json['currentDrawingStart'],
       isPrivate: json['isPrivate'] ?? false,
       players: playersList,
       roundDuration: json['roundDuration'],
