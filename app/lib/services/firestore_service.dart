@@ -33,24 +33,6 @@ class FirestoreService {
   //     print('Error sending message: $e');
   //   }
   // }
-  Future<void> uploadWordsToFirestore() async {
-    // Load the JSON file
-    final String jsonString =
-        await rootBundle.loadString('assets/wordbank.json');
-
-    // Parse JSON
-    final List<dynamic> wordsList = json.decode(jsonString);
-
-    // Upload each word
-    for (var word in wordsList) {
-      await wordBankRef.add({
-        'word': word,
-        'timestamp': FieldValue.serverTimestamp(), // Optional field
-      });
-    }
-
-    print('Words uploaded to Firestore!');
-  }
 
   Future<void> sendMessage(
     String sender,

@@ -27,8 +27,6 @@ class _GameLayoutState extends State<GameLayout>
   void initState() {
     super.initState();
 
-    FirestoreService()
-        .uploadWordsToFirestore(); // Only run once during development
     // Start timer
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
