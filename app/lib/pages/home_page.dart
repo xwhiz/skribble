@@ -59,37 +59,34 @@ class HomePage extends StatelessWidget {
                                   context,
                                   icon: Icons.public,
                                   text: "Join Public Game",
-                                  onTap:
-                                      viewModel.isLoading
-                                          ? null
-                                          : () async {
-                                            await viewModel.joinPublicRoom();
+                                  onTap: viewModel.isLoading
+                                      ? null
+                                      : () async {
+                                          await viewModel.joinPublicRoom();
 
-                                            // Check if joining was successful
-                                            if (viewModel.room != null &&
-                                                viewModel.error == null) {
-                                              Navigator.push(
-                                                // ignore: use_build_context_synchronously
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder:
-                                                      (context) =>
-                                                          const GameLayout(),
+                                          // Check if joining was successful
+                                          if (viewModel.room != null &&
+                                              viewModel.error == null) {
+                                            Navigator.push(
+                                              // ignore: use_build_context_synchronously
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    const GameLayout(),
+                                              ),
+                                            );
+                                          } else if (viewModel.error != null) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  viewModel.error!,
                                                 ),
-                                              );
-                                            } else if (viewModel.error !=
-                                                null) {
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    viewModel.error!,
-                                                  ),
-                                                ),
-                                              );
-                                            }
-                                          },
+                                              ),
+                                            );
+                                          }
+                                        },
                                 ),
                                 const SizedBox(height: 10),
                                 _buildButton(
@@ -183,7 +180,7 @@ class SkribbleLogo extends StatelessWidget {
       alignment: Alignment.center,
       children: [
         Image.asset(
-          'assets/images/splash-animation.png',
+          '../assets/images/splash-animation.png',
           height: 130,
           fit: BoxFit.contain,
         ),

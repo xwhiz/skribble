@@ -52,7 +52,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '116869171794',
     projectId: 'skribble-39177',
     authDomain: 'skribble-39177.firebaseapp.com',
-    databaseURL: 'https://skribble-39177-default-rtdb.asia-southeast1.firebasedatabase.app',
+    databaseURL:
+        'https://skribble-39177-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'skribble-39177.firebasestorage.app',
     measurementId: 'G-2P90TQR81J',
   );
@@ -62,7 +63,8 @@ class DefaultFirebaseOptions {
     appId: '1:116869171794:android:1484a5606874ecf2dded8b',
     messagingSenderId: '116869171794',
     projectId: 'skribble-39177',
-    databaseURL: 'https://skribble-39177-default-rtdb.asia-southeast1.firebasedatabase.app',
+    databaseURL:
+        'https://skribble-39177-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'skribble-39177.firebasestorage.app',
   );
 
@@ -71,7 +73,8 @@ class DefaultFirebaseOptions {
     appId: '1:116869171794:ios:79bd4523bee0c9e0dded8b',
     messagingSenderId: '116869171794',
     projectId: 'skribble-39177',
-    databaseURL: 'https://skribble-39177-default-rtdb.asia-southeast1.firebasedatabase.app',
+    databaseURL:
+        'https://skribble-39177-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'skribble-39177.firebasestorage.app',
     iosBundleId: 'com.example.app',
   );
