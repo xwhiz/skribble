@@ -7,6 +7,7 @@ import 'package:app/widgets/chat_widget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
+import 'package:app/data/constants.dart';
 
 class GameLayout extends StatefulWidget {
   const GameLayout({Key? key}) : super(key: key);
@@ -51,10 +52,26 @@ class _GameLayoutState extends State<GameLayout>
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
+
+  int getRemainingTime(drawingStartAt) {
+    final currentTime = DateTime.now();
+    if (drawingStartAt != null) {
+      final timeElapsed = currentTime.difference(drawingStartAt.toDate());
+      print('Time elapsed: ${timeElapsed.inSeconds} seconds');
+      final remainingTime = K.roundDuration - timeElapsed.inSeconds;
+      return remainingTime > 0 ? remainingTime : 0;
+    }
+    print('No drawing start time available');
+    return K.roundDuration; // Default to full duration if no start time
+  }
   @override
   Widget build(BuildContext context) {
     final mainViewModel = Provider.of<MainViewModel>(context);
-
+    final drawingStartAt = mainViewModel.room?.drawingStartAt;
+    print("drawingStartAt: $drawingStartAt");
+    final remainingTime = getRemainingTime(drawingStartAt);
+    print('Remaining time: $remainingTime');
+    _seconds = remainingTime;
     // Check if we have a valid room ID
     if (mainViewModel.currentRoomId == null) {
       return Scaffold(

@@ -166,6 +166,7 @@ class FirestoreService {
       ],
       'roundDuration': roundDuration,
       'createdAt': DateTime.now(),
+      'drawingStartAt': DateTime.now(),
       'drawing': {
         'elements': [],
         'lastUpdatedBy': '',

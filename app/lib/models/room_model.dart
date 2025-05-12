@@ -1,15 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'package:app/data/constants.dart';
 import 'player_model.dart';
 import 'chat_message_model.dart'; // Import the ChatMessage model
 
 class RoomModel {
   final String roomCode;
   final String status; // 'waiting', 'playing', 'ended'
-  final int? maxPlayers;
-  final int? currentPlayers;
-  final int? currentRound;
-  final int? totalRounds;
   final String? currentDrawerId;
   final String? currentWord;
   final String? hint;
@@ -19,7 +15,12 @@ class RoomModel {
   final List<PlayerModel>? players;
   final List<ChatMessage>? messages; // New field for player messages
   final int? roundDuration;
+  final int? maxPlayers;
+  final int? currentPlayers;
+  final int? currentRound;
+  final int? totalRounds;
   final Timestamp? createAt;
+  final Timestamp? drawingStartAt; // New field for drawing start time
 
   RoomModel({
     required this.roomCode,
@@ -38,6 +39,7 @@ class RoomModel {
     this.messages, // Initialize playerMessages
     this.roundDuration,
     this.createAt,
+    this.drawingStartAt
   });
 
   factory RoomModel.fromJson(Map<String, dynamic> json) {
@@ -61,10 +63,10 @@ class RoomModel {
     return RoomModel(
       roomCode: json['roomCode'] ?? '',
       status: json['status'] ?? 'waiting',
-      maxPlayers: json['maxPlayers'],
+      maxPlayers: json['maxPlayers'] ?? K.maxPlayers,
       currentPlayers: json['currentPlayers'],
-      currentRound: json['currentRound'],
-      totalRounds: json['totalRounds'],
+      currentRound: json['currentRound'] ?? 0,
+      totalRounds: json['totalRounds'] ?? K.totalRounds,
       currentDrawerId: json['currentDrawerId'],
       currentWord: json['currentWord'],
       hint: json['hint'],
@@ -72,10 +74,12 @@ class RoomModel {
       timeLeft: json['timeLeft'],
       isPrivate: json['isPrivate'] ?? false,
       players: playersList,
-      roundDuration: json['roundDuration'],
+      roundDuration: json['roundDuration'] ?? K.roundDuration,
       messages: messages,
       createAt:
           json['createAt'] != null ? (json['createAt'] as Timestamp) : null,
+      drawingStartAt:
+          json['drawingStartAt'] != null ? (json['drawingStartAt'] as Timestamp) : null,
     );
   }
 }

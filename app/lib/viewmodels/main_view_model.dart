@@ -111,12 +111,11 @@ class MainViewModel extends ChangeNotifier {
       final result = await _firestoreService.joinPublicRoom();
       print("result: $result");
 
-      if (result != null && result['roomId'] != null) {
+      if (result['roomId'] != null) {
         final roomDoc = await FirebaseFirestore.instance
             .collection('Room')
             .doc(result['roomId'])
             .get();
-
         if (roomDoc.exists && roomDoc.data() != null) {
           _room = RoomModel.fromJson(roomDoc.data()!);
           _subscribeToRoom(result['roomId']);
