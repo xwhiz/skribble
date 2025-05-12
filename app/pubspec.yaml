@@ -39,4 +39,5 @@ flutter:
 
   assets:
     - assets/images/splash_lottie.json
+    - assets/wordbank.json
    
