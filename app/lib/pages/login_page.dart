@@ -1,10 +1,12 @@
 import 'dart:ui';
 
 //import 'package:app/pages/game_screen.dart';
+import 'package:app/pages/guest_login.dart';
 import 'package:app/pages/home_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'register_page.dart';
+import 'package:flutter/gestures.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -19,11 +21,11 @@ class _LoginPageState extends State<LoginPage> {
   String? playerName;
   Future<void> login() async {
     try {
-      UserCredential userCredential = await FirebaseAuth.instance
-          .signInWithEmailAndPassword(
-            email: usernameController.text.trim(),
-            password: passwordController.text.trim(),
-          );
+      UserCredential userCredential =
+          await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: usernameController.text.trim(),
+        password: passwordController.text.trim(),
+      );
 
       // Get the logged-in user's name (displayName)
       User? user = userCredential.user;
@@ -156,7 +158,6 @@ class _LoginPageState extends State<LoginPage> {
                               horizontal: 20,
                             ),
                           ),
-
                           style: TextStyle(
                             color: Color.fromARGB(179, 32, 42, 53),
                             fontFamily: 'ComicNeue',
@@ -166,7 +167,6 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(height: 30),
                       SizedBox(
                         width: 400,
-
                         child: ElevatedButton(
                           onPressed: () async {
                             await login();
@@ -217,24 +217,41 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ],
                       const SizedBox(height: 23),
-                      const Text(
-                        "Don't have an account?",
-                        style: TextStyle(
-                          color: Color.fromARGB(179, 32, 42, 53),
-                          fontSize: 18,
-                          fontFamily: 'ComicNeue', // Applying Comic Neue font
+                      RichText(
+                        text: TextSpan(
+                          style: TextStyle(
+                            color: Color.fromARGB(179, 32, 42, 53),
+                            fontSize: 18,
+                            fontFamily: 'ComicNeue',
+                          ),
+                          children: [
+                            const TextSpan(text: "Don't have an account? "),
+                            TextSpan(
+                              text: 'Register',
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => RegisterPage()),
+                                  );
+                                },
+                            ),
+                          ],
                         ),
                       ),
+
                       const SizedBox(height: 10), // Add some space between
                       SizedBox(
                         width: 400,
-
                         child: ElevatedButton(
                           onPressed: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const RegisterPage(),
+                                builder: (_) => const GuestLogin(),
                               ),
                             );
                           },
@@ -251,7 +268,7 @@ class _LoginPageState extends State<LoginPage> {
                             elevation: 0,
                           ),
                           child: const Text(
-                            "Register",
+                            "Play As Guest",
                             style: TextStyle(
                               fontSize: 24,
                               color: Color.fromARGB(179, 32, 42, 53),

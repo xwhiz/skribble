@@ -1,6 +1,8 @@
 import 'package:app/data/constants.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import '../models/room_model.dart';
 import '../services/firestore_service.dart';
@@ -15,6 +17,7 @@ class MainViewModel extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   StreamSubscription<DocumentSnapshot>? _roomSubscription; // Add this line
+  final FirebaseAuth _auth = FirebaseAuth.instance; // Define _auth
 
   RoomModel? get room => _room;
   bool get isLoading => _isLoading;
@@ -100,16 +103,66 @@ class MainViewModel extends ChangeNotifier {
   }
 
   // Similarly update the joinPublicRoom and joinPrivateRoom methods
-  Future<void> joinPublicRoom() async {
+  // Future<void> joinPublicRoom() async {
+  //   _setLoading(true);
+  //   _error = null;
+
+  //   try {
+  //     // Clean up previous room first
+  //     await _cleanupPreviousRoom();
+
+  //     final result = await _firestoreService.joinPublicRoom();
+  //     print("result: $result");
+
+  //     if (result != null && result['roomId'] != null) {
+  //       final roomDoc = await FirebaseFirestore.instance
+  //           .collection('Room')
+  //           .doc(result['roomId'])
+  //           .get();
+
+  //       if (roomDoc.exists && roomDoc.data() != null) {
+  //         _room = RoomModel.fromJson(roomDoc.data()!);
+  //         _subscribeToRoom(result['roomId']);
+  //         // Don't manually set currentRoomId as it's a getter
+  //       } else {
+  //         _error = 'Room document not found or empty';
+  //       }
+  //     } else {
+  //       _error = 'Failed to join room: Invalid result';
+  //     }
+  //   } catch (e) {
+  //     _error = 'Failed to join room: $e';
+  //     print(e.toString());
+  //   } finally {
+  //     _setLoading(false);
+  //   }
+  // }
+
+  Future<void> joinPublicRoom({required bool isGuest}) async {
     _setLoading(true);
     _error = null;
 
     try {
-      // Clean up previous room first
       await _cleanupPreviousRoom();
 
-      final result = await _firestoreService.joinPublicRoom();
-      print("result: $result");
+      // Ensure guest users are signed in anonymously
+      final auth = FirebaseAuth.instance;
+      if (isGuest && auth.currentUser == null) {
+        await auth.signInAnonymously();
+        print("Signed in anonymously as ${auth.currentUser?.uid}");
+      }
+
+      final user = auth.currentUser;
+      String userId =
+          user?.uid ?? 'guest_${DateTime.now().millisecondsSinceEpoch}';
+      String userName =
+          isGuest ? await getGuestName() : user?.displayName ?? 'Anonymous';
+
+      print("User $userName with ID $userId is attempting to join a room.");
+
+      final result = await _firestoreService.joinPublicRoom(isGuest: isGuest);
+
+      print("Result from FirestoreService: $result");
 
       if (result['roomId'] != null) {
         final roomDoc = await FirebaseFirestore.instance
@@ -119,22 +172,39 @@ class MainViewModel extends ChangeNotifier {
         if (roomDoc.exists && roomDoc.data() != null) {
           _room = RoomModel.fromJson(roomDoc.data()!);
           _subscribeToRoom(result['roomId']);
-          // Don't manually set currentRoomId as it's a getter
         } else {
-          _error = 'Room document not found or empty';
+          _error = 'Room document not found or is empty.';
+          print("Room document not found or is empty.");
         }
       } else {
         _error = 'Failed to join room: Invalid result';
+        print("Invalid result received from FirestoreService: $result");
       }
-    } catch (e) {
-      _error = 'Failed to join room: $e';
-      print(e.toString());
+    } catch (e, stackTrace) {
+      if (e is FirebaseAuthException) {
+        _error = 'Authentication error: ${e.message}';
+      } else if (e is FirebaseException) {
+        _error = 'Firestore error: ${e.message}';
+      } else if (e is TimeoutException) {
+        _error = 'Request timed out. Please try again.';
+      } else {
+        _error = 'Unexpected error: $e';
+      }
+
+      print("Error: $_error");
+      print("StackTrace: $stackTrace");
     } finally {
       _setLoading(false);
     }
   }
 
-  Future<void> joinPrivateRoom(String roomCode) async {
+  // Helper function to fetch guest name from SharedPreferences
+  Future<String> getGuestName() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString('playerName') ?? 'Anonymous';
+  }
+
+  Future<void> joinPrivateRoom(String roomCode, {String? guestName}) async {
     _setLoading(true);
     _error = null;
 
@@ -142,7 +212,17 @@ class MainViewModel extends ChangeNotifier {
       // Clean up previous room first
       await _cleanupPreviousRoom();
 
-      final result = await _firestoreService.joinPrivateRoom(roomCode);
+      // If no guestName is provided, handle it based on authentication state
+      final User? currentUser = _auth.currentUser;
+      if (currentUser == null && guestName == null) {
+        _error = 'User not authenticated and guest name not provided';
+        return;
+      }
+
+      // Pass the guest name or handle the user authentication
+      final result = await _firestoreService.joinPrivateRoom(roomCode,
+          guestName: guestName);
+
       if (result == true) {
         final roomDoc = await FirebaseFirestore.instance
             .collection('Room')

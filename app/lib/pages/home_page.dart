@@ -1,18 +1,24 @@
 import 'dart:async';
 import 'dart:ui';
-import 'package:flutter/material.dart';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:app/pages/create_room.dart';
 import 'package:app/pages/game_layout.dart';
 import 'package:app/pages/join_private_room.dart';
+
 import 'package:app/viewmodels/main_view_model.dart';
+
+import 'package:flutter/material.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
+  static final FirebaseAuth _auth = FirebaseAuth.instance;
+
   @override
   Widget build(BuildContext context) {
-    //Access the ViewModel
+    // Access the ViewModel
     final viewModel = Provider.of<MainViewModel>(context);
 
     return Scaffold(
@@ -42,19 +48,17 @@ class HomePage extends StatelessWidget {
                           child: Container(
                             padding: const EdgeInsets.all(25),
                             decoration: BoxDecoration(
-                              // ignore: deprecated_member_use
                               color: Colors.white.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                // ignore: deprecated_member_use
                                 color: Colors.white.withOpacity(0.3),
                               ),
                             ),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                SkribbleLogo(),
-                                SizedBox(height: 16),
+                                const SkribbleLogo(),
+                                const SizedBox(height: 16),
                                 _buildButton(
                                   context,
                                   icon: Icons.public,
@@ -62,16 +66,15 @@ class HomePage extends StatelessWidget {
                                   onTap: viewModel.isLoading
                                       ? null
                                       : () async {
-                                          await viewModel.joinPublicRoom();
+                                          await viewModel.joinPublicRoom(
+                                              isGuest: true);
 
-                                          // Check if joining was successful
                                           if (viewModel.room != null &&
                                               viewModel.error == null) {
-                                            Navigator.push(
-                                              // ignore: use_build_context_synchronously
+                                            Navigator.pushReplacement(
                                               context,
                                               MaterialPageRoute(
-                                                builder: (context) =>
+                                                builder: (_) =>
                                                     const GameLayout(),
                                               ),
                                             );
@@ -94,10 +97,15 @@ class HomePage extends StatelessWidget {
                                   icon: Icons.privacy_tip,
                                   text: "Join Private Game",
                                   onTap: () {
+                                    final User? currentUser = _auth.currentUser;
+
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (_) => const JoinPrivateRoom(),
+                                        builder: (_) => JoinPrivateRoom(
+                                            guestName:
+                                                currentUser?.displayName ??
+                                                    "Guest"),
                                       ),
                                     );
                                   },
