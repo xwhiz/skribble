@@ -5,8 +5,11 @@ import 'package:flutter/material.dart';
 
 class ChatWidget extends StatefulWidget {
   final String roomId;
+  final String guestName;
 
-  const ChatWidget({Key? key, required this.roomId}) : super(key: key);
+  // ignore: use_super_parameters
+  const ChatWidget({Key? key, required this.roomId, required this.guestName})
+      : super(key: key);
 
   @override
   State<ChatWidget> createState() => _ChatWidgetState();
@@ -39,8 +42,9 @@ class _ChatWidgetState extends State<ChatWidget> {
     if (message.isEmpty) return;
 
     final User? currentUser = _auth.currentUser;
-    final String userName = currentUser?.displayName ??
-        'User-${(DateTime.now().millisecondsSinceEpoch % 10000)}';
+    final String userName = currentUser?.displayName?.isNotEmpty == true
+        ? currentUser!.displayName!
+        : widget.guestName;
 
     setState(() {
       _isSending = true;
@@ -135,49 +139,38 @@ class _ChatWidgetState extends State<ChatWidget> {
                   );
                 }
               });
-
               return messages.isEmpty
-                  ? Center(child: Text('No messages yet'))
+                  ? const Center(child: Text('No messages yet'))
                   : ListView.builder(
                       controller: _scrollController,
                       itemCount: messages.length,
                       itemBuilder: (context, index) {
                         final message = messages[index];
-                        final Color bgColor =
-                            messageColors[index % messageColors.length];
 
-                        return Align(
-                          alignment: Alignment.centerLeft,
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(
-                              vertical: 4,
-                              horizontal: 8,
-                            ),
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: bgColor.withOpacity(0.8),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  message.username,
-                                  style: TextStyle(
-                                    color: Color.fromARGB(255, 32, 42, 53),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 4.0, horizontal: 8.0),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                border: Border(
+                                  bottom: BorderSide(
+                                    color: Colors
+                                        .grey, // You can change this color
+                                    width: 1.0,
                                   ),
                                 ),
-                                SizedBox(height: 2),
-                                Text(
-                                  message.content,
-                                  style: TextStyle(
-                                    color: Color.fromARGB(179, 32, 42, 53),
-                                    fontSize: 14,
-                                  ),
+                              ),
+                              padding: const EdgeInsets.only(
+                                  bottom: 4), // Optional spacing below text
+                              child: Text(
+                                '${message.username}: ${message.content}',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color.fromARGB(255, 32, 42, 53),
                                 ),
-                              ],
+                              ),
                             ),
                           ),
                         );
@@ -187,6 +180,7 @@ class _ChatWidgetState extends State<ChatWidget> {
           ),
         ),
 
+        // Message input
         // Input area
         Container(
           height: 50,

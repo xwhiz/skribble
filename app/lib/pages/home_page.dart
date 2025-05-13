@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:app/pages/create_room.dart';
 import 'package:app/pages/game_layout.dart';
@@ -12,6 +13,8 @@ import 'package:flutter/material.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
+
+  static final FirebaseAuth _auth = FirebaseAuth.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -60,34 +63,33 @@ class HomePage extends StatelessWidget {
                                   context,
                                   icon: Icons.public,
                                   text: "Join Public Game",
-                                  onTap:
-                                      viewModel.isLoading
-                                          ? null
-                                          : () async {
-                                            await viewModel.joinPublicRoom();
+                                  onTap: viewModel.isLoading
+                                      ? null
+                                      : () async {
+                                          await viewModel.joinPublicRoom(
+                                              isGuest: true);
 
-                                            if (viewModel.room != null &&
-                                                viewModel.error == null) {
-                                              Navigator.pushReplacement(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder:
-                                                      (_) => const GameLayout(),
+                                          if (viewModel.room != null &&
+                                              viewModel.error == null) {
+                                            Navigator.pushReplacement(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) =>
+                                                    const GameLayout(),
+                                              ),
+                                            );
+                                          } else if (viewModel.error != null) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  viewModel.error!,
                                                 ),
-                                              );
-                                            } else if (viewModel.error !=
-                                                null) {
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    viewModel.error!,
-                                                  ),
-                                                ),
-                                              );
-                                            }
-                                          },
+                                              ),
+                                            );
+                                          }
+                                        },
                                 ),
                                 const SizedBox(height: 10),
                                 _buildButton(
@@ -95,10 +97,15 @@ class HomePage extends StatelessWidget {
                                   icon: Icons.privacy_tip,
                                   text: "Join Private Game",
                                   onTap: () {
+                                    final User? currentUser = _auth.currentUser;
+
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (_) => const JoinPrivateRoom(),
+                                        builder: (_) => JoinPrivateRoom(
+                                            guestName:
+                                                currentUser?.displayName ??
+                                                    "Guest"),
                                       ),
                                     );
                                   },
