@@ -13,6 +13,7 @@ class RoomModel {
   final String? timeLeft; // Formatted time left "01:25"
   final bool? isPrivate;
   final List<PlayerModel>? players;
+  final List<String>? drawingQueue;
   final List<ChatMessage>? messages; // New field for player messages
   final int? roundDuration;
   final int? maxPlayers;
@@ -39,7 +40,8 @@ class RoomModel {
     this.messages, // Initialize playerMessages
     this.roundDuration,
     this.createAt,
-    this.drawingStartAt
+    this.drawingStartAt,
+    this.drawingQueue,
   });
 
   factory RoomModel.fromJson(Map<String, dynamic> json) {
@@ -51,6 +53,7 @@ class RoomModel {
               .map((playerJson) => PlayerModel.fromJson(playerJson))
               .toList();
     }
+
 
     // Parse playerMessages map if it exists
     List<ChatMessage>? messages;
@@ -74,6 +77,7 @@ class RoomModel {
       timeLeft: json['timeLeft'],
       isPrivate: json['isPrivate'] ?? false,
       players: playersList,
+      drawingQueue: json['drawingQueue'],
       roundDuration: json['roundDuration'] ?? K.roundDuration,
       messages: messages,
       createAt:
