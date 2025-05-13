@@ -295,11 +295,11 @@ class FirestoreService {
   }
 
   // Start the game
-  Future<bool> startGame(String roomId) async {
+  Future<bool> startDrawing(String roomId) async {
     try {
       DocumentReference roomRef = _db.collection('Room').doc(roomId);
       DocumentSnapshot roomSnapshot = await roomRef.get();
-
+    
       if (!roomSnapshot.exists) {
         return false;
       }
@@ -307,16 +307,17 @@ class FirestoreService {
       Map<String, dynamic> roomData =
           roomSnapshot.data() as Map<String, dynamic>;
       List<dynamic> players = roomData['players'] ?? [];
+      List<dynamic> drawingQueue = roomData['drawingQueue'] ?? [];
+
+      //Get darwer ID and update queue
+      String drawerId = drawingQueue[0];
+      drawingQueue[0] = drawingQueue[drawingQueue.length -1];
+      drawingQueue[drawingQueue.length -1] = drawerId;
 
       // Check if there are at least 2 players
       if (players.length < 2) {
         return false;
       }
-
-      // Choose a random player as the first drawer
-      Random random = Random();
-      int drawerIndex = random.nextInt(players.length);
-      String drawerId = players[drawerIndex]['userId'];
 
       // Choose a random word
       String word = _getRandomWord();
