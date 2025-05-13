@@ -23,7 +23,7 @@ class _GameLayoutState extends State<GameLayout>
   // Timer countdown
   int _seconds = 60;
   Timer? _timer;
-
+  
   @override
   void initState() {
     super.initState();
@@ -72,6 +72,9 @@ class _GameLayoutState extends State<GameLayout>
     final remainingTime = getRemainingTime(drawingStartAt);
     print('Remaining time: $remainingTime');
     _seconds = remainingTime;
+    setState(() {
+      if (remainingTime <=0) {mainViewModel.startDrawing();}
+    });
     // Check if we have a valid room ID
     if (mainViewModel.currentRoomId == null) {
       return Scaffold(

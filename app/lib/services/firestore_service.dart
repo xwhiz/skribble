@@ -112,6 +112,7 @@ class FirestoreService {
               'isDrawing': false,
             },
           ]),
+          'drawingQueue': roomData['drawingQueue'].add(currentUser.uid),
         });
       } else {
         roomId = await createRoom(
@@ -164,6 +165,7 @@ class FirestoreService {
           'isDrawing': false,
         },
       ],
+      'drawingQueue' : [currentUser.uid],
       'roundDuration': roundDuration,
       'createdAt': DateTime.now(),
       'drawingStartAt': DateTime.now(),
@@ -173,6 +175,8 @@ class FirestoreService {
         'lastUpdatedAt': DateTime.now(),
       },
     });
+
+    startDrawing(roomCode);
 
     return roomCode;
   }
@@ -304,63 +308,70 @@ class FirestoreService {
   }
 
   // Start the game
-  Future<bool> startDrawing(String roomId) async {
+  Future<void> startDrawing(String roomId) async {
+    
     try {
+      final User? currentUser = _auth.currentUser;
       DocumentReference roomRef = _db.collection('Room').doc(roomId);
       DocumentSnapshot roomSnapshot = await roomRef.get();
     
       if (!roomSnapshot.exists) {
-        return false;
+        return;
+      }
+
+      if (currentUser == null) {
+      throw Exception('User not authenticated');
       }
 
       Map<String, dynamic> roomData =
           roomSnapshot.data() as Map<String, dynamic>;
       List<dynamic> players = roomData['players'] ?? [];
-      List<dynamic> drawingQueue = roomData['drawingQueue'] ?? [];
+      List<String> drawingQueue = roomData['drawingQueue'] ?? [];
 
       //Get darwer ID and update queue
       String drawerId = drawingQueue[0];
-      drawingQueue[0] = drawingQueue[drawingQueue.length -1];
-      drawingQueue[drawingQueue.length -1] = drawerId;
+      if (currentUser.uid == drawerId){
+        drawingQueue.removeAt(0);
+        drawingQueue.add(drawerId);
 
-      // Check if there are at least 2 players
-      if (players.length < 2) {
-        return false;
+        
+
+        // // Check if there are at least 2 players
+        // if (players.length < 2) {
+        //   return false;
+        // }
+
+        // Choose a random word
+        String word = _getRandomWord();
+        // String hint = _generateHint(word);
+        String hiddenWord = _generateHiddenWord(word);
+
+        // Update room status
+        await roomRef.update({
+          'status': 'playing',
+          'currentRound': 1,
+          'currentDrawerId': drawerId,
+          'currentWord': word,
+          'hiddenWord': hiddenWord,
+          'drawingStartAt': DateTime.now(),
+          'drawing': {
+            'elements': [],
+            'lastUpdatedBy': drawerId,
+            'lastUpdatedAt': DateTime.now(),
+          },
+          'drawingQueue': drawingQueue,
+        });
+
+        // Update the drawer status in players array
+        List<dynamic> updatedPlayers = players.map((player) {
+          return {...player, 'isDrawing': player['userId'] == drawerId};
+        }).toList();
+
+        await roomRef.update({'players': updatedPlayers});
       }
-
-      // Choose a random word
-      String word = _getRandomWord();
-      String hint = _generateHint(word);
-      String hiddenWord = _generateHiddenWord(word);
-
-      // Update room status
-      await roomRef.update({
-        'status': 'playing',
-        'currentRound': 1,
-        'currentDrawerId': drawerId,
-        'currentWord': word,
-        'hint': hint,
-        'hiddenWord': hiddenWord,
-        'gameStartTime': DateTime.now(),
-        'timeLeft': '60:00',
-        'drawing': {
-          'elements': [],
-          'lastUpdatedBy': drawerId,
-          'lastUpdatedAt': DateTime.now(),
-        }
-      });
-
-      // Update the drawer status in players array
-      List<dynamic> updatedPlayers = players.map((player) {
-        return {...player, 'isDrawing': player['userId'] == drawerId};
-      }).toList();
-
-      await roomRef.update({'players': updatedPlayers});
-
-      return true;
+      else {print("Not drawer");}
     } catch (e) {
       print('Error starting game: $e');
-      return false;
     }
   }
 
