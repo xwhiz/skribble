@@ -153,6 +153,7 @@ class _ChatWidgetState extends State<ChatWidget> {
                           child: Align(
                             alignment: Alignment.centerLeft,
                             child: Container(
+                              width: double.infinity,
                               decoration: const BoxDecoration(
                                 border: Border(
                                   bottom: BorderSide(
