@@ -57,7 +57,7 @@ class _GameLayoutState extends State<GameLayout>
     final currentTime = DateTime.now();
     if (drawingStartAt != null) {
       final timeElapsed = currentTime.difference(drawingStartAt.toDate());
-      print('Time elapsed: ${timeElapsed.inSeconds} seconds');
+      // print('Time elapsed: ${timeElapsed.inSeconds} seconds');
       final remainingTime = K.roundDuration - timeElapsed.inSeconds;
       return remainingTime > 0 ? remainingTime : 0;
     }
@@ -68,9 +68,9 @@ class _GameLayoutState extends State<GameLayout>
   Widget build(BuildContext context) {
     final mainViewModel = Provider.of<MainViewModel>(context);
     final drawingStartAt = mainViewModel.room?.drawingStartAt;
-    print("drawingStartAt: $drawingStartAt");
+    // print("drawingStartAt: $drawingStartAt");
     final remainingTime = getRemainingTime(drawingStartAt);
-    print('Remaining time: $remainingTime');
+    // print('Remaining time: $remainingTime');
     _seconds = remainingTime;
     setState(() {
       if (remainingTime <=0) {mainViewModel.startDrawing();}

@@ -53,17 +53,26 @@ class RoomModel {
               .map((playerJson) => PlayerModel.fromJson(playerJson))
               .toList();
     }
+    // print("After players");
 
 
     // Parse playerMessages map if it exists
     List<ChatMessage>? messages;
 
     if (json['messages'] != null) {
-      var msgs = json['messages'] as List<dynamic>;
+      var msgs = List<dynamic>.from(json['messages']);
       messages = msgs.map((msg) => ChatMessage.fromJson(msg)).toList();
     }
 
-    return RoomModel(
+    List<String>? drawingQueue;
+    if (json['drawingQueue'] != null) {
+      var queue = List<dynamic>.from(json['drawingQueue']);
+      drawingQueue = queue.map((e) => e.toString()).toList();
+    }
+
+    // print("After messages");
+
+    var roomModel = RoomModel(
       roomCode: json['roomCode'] ?? '',
       status: json['status'] ?? 'waiting',
       maxPlayers: json['maxPlayers'] ?? K.maxPlayers,
@@ -77,7 +86,7 @@ class RoomModel {
       timeLeft: json['timeLeft'],
       isPrivate: json['isPrivate'] ?? false,
       players: playersList,
-      drawingQueue: json['drawingQueue'],
+      drawingQueue: drawingQueue,//json['drawingQueue'],
       roundDuration: json['roundDuration'] ?? K.roundDuration,
       messages: messages,
       createAt:
@@ -85,5 +94,9 @@ class RoomModel {
       drawingStartAt:
           json['drawingStartAt'] != null ? (json['drawingStartAt'] as Timestamp) : null,
     );
+
+    // print("After roomModel");
+
+    return roomModel;
   }
 }
