@@ -255,7 +255,7 @@ class FirestoreService {
           roomSnapshot.data() as Map<String, dynamic>;
       List<dynamic> players = roomData['players'] ?? [];
 
-      // Find the player to remove
+      // Find the player to remove from players list
       int playerIndex = players.indexWhere(
         (player) => player['userId'] == currentUser.uid,
       );
@@ -263,11 +263,19 @@ class FirestoreService {
         return; // Player not found
       }
 
+      // Remove player from player and drawing queue list
+      players.removeAt(playerIndex);
+
+      //Find the player to remove from drawing Queue
+      List<String> drawingQueue = roomData['drawingQueue'] ?? [];
+      int playerDrawingQueueIndex = drawingQueue.indexWhere(
+        (userId) => userId == currentUser.uid 
+      );
+      drawingQueue.removeAt(playerDrawingQueueIndex);
+
       // Check if this player is the current drawer
       bool isDrawer = roomData['currentDrawerId'] == currentUser.uid;
-
-      // Remove player from list
-      players.removeAt(playerIndex);
+      if (isDrawer) {startDrawing(roomId);}
 
       // Update room
       if (players.isEmpty) {
@@ -278,6 +286,7 @@ class FirestoreService {
         Map<String, dynamic> updateData = {
           'currentPlayers': FieldValue.increment(-1),
           'players': players,
+          'drawingQueue':drawingQueue,
         };
 
         // If this was the drawer, choose next player
@@ -334,6 +343,11 @@ class FirestoreService {
         'hiddenWord': hiddenWord,
         'gameStartTime': DateTime.now(),
         'timeLeft': '60:00',
+        'drawing': {
+          'elements': [],
+          'lastUpdatedBy': drawerId,
+          'lastUpdatedAt': DateTime.now(),
+        }
       });
 
       // Update the drawer status in players array
