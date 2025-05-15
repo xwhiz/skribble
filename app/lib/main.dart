@@ -1,4 +1,5 @@
 import 'package:app/pages/splash_screen.dart';
+import 'package:app/viewmodels/drawing_view_model.dart';
 import 'package:app/viewmodels/main_view_model.dart';
 import 'package:provider/provider.dart';
 import 'package:app/services/firestore_service.dart';

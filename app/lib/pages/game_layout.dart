@@ -23,6 +23,8 @@ class _GameLayoutState extends State<GameLayout>
   int _seconds = K.roundDuration;
   Timer? _timer;
 
+  DrawingViewModel? _drawingViewModel;
+
   @override
   void initState() {
     var mainViewModel = Provider.of<MainViewModel>(context, listen: false);
@@ -35,10 +37,11 @@ class _GameLayoutState extends State<GameLayout>
       });
 
       if (_seconds <= 0) {
+        _drawingViewModel?.clearCanvas();
         mainViewModel.startDrawing();
       }
     });
-    
+
     super.initState();
   }
 
@@ -69,7 +72,7 @@ class _GameLayoutState extends State<GameLayout>
   @override
   Widget build(BuildContext context) {
     final vm = Provider.of<MainViewModel>(context);
-    
+
     _seconds = getRemainingTime(vm.room?.drawingStartAt);
 
     // Check if we have a valid room ID
@@ -84,7 +87,11 @@ class _GameLayoutState extends State<GameLayout>
     // Create a new DrawingViewModel for this room
     return ChangeNotifierProvider<DrawingViewModel>(
       // Use create instead of value to ensure a fresh instance
-      create: (_) => DrawingViewModel(roomId: vm.currentRoomId!),
+      create: (_) {
+        var drawingVM = DrawingViewModel(roomId: vm.currentRoomId!);
+        _drawingViewModel = drawingVM;
+        return drawingVM;
+      },
       child: Scaffold(
         body: SafeArea(
           child: Column(
@@ -121,8 +128,7 @@ class _GameLayoutState extends State<GameLayout>
                       // Center: Word
                       Flexible(
                         child: Text(
-                          vm.room?.currentWord?.toUpperCase() ??
-                              "HOUSE",
+                          vm.room?.currentWord?.toUpperCase() ?? "HOUSE",
                           overflow: TextOverflow
                               .ellipsis, // Ensure text doesn't overflow
                           style: TextStyle(
