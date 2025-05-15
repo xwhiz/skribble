@@ -4,7 +4,6 @@ import 'package:app/viewmodels/main_view_model.dart';
 import 'package:app/viewmodels/drawing_view_model.dart';
 import 'package:app/widgets/drawing_board_widget.dart';
 import 'package:app/widgets/chat_widget.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import 'package:app/data/constants.dart';
@@ -32,8 +31,6 @@ class _GameLayoutState extends State<GameLayout>
       setState(() {
         if (_seconds > 0) {
           _seconds--;
-        } else {
-          // _timer?.cancel();
         }
       });
 
@@ -62,7 +59,6 @@ class _GameLayoutState extends State<GameLayout>
     final currentTime = DateTime.now();
     if (drawingStartAt != null) {
       final timeElapsed = currentTime.difference(drawingStartAt.toDate());
-      // print('Time elapsed: ${timeElapsed.inSeconds} seconds');
       final remainingTime = K.roundDuration - timeElapsed.inSeconds;
       return remainingTime > 0 ? remainingTime : 0;
     }
@@ -72,17 +68,12 @@ class _GameLayoutState extends State<GameLayout>
 
   @override
   Widget build(BuildContext context) {
-    final mainViewModel = Provider.of<MainViewModel>(context);
-    final drawingStartAt = mainViewModel.room?.drawingStartAt;
-    // print("drawingStartAt: $drawingStartAt");
-    final remainingTime = getRemainingTime(drawingStartAt);
-    // print('Remaining time: $remainingTime');
-    _seconds = remainingTime;
-    // setState(() {
+    final vm = Provider.of<MainViewModel>(context);
+    
+    _seconds = getRemainingTime(vm.room?.drawingStartAt);
 
-    // });
     // Check if we have a valid room ID
-    if (mainViewModel.currentRoomId == null) {
+    if (vm.currentRoomId == null) {
       return Scaffold(
         body: Center(
           child: Text('No active room. Please join a room first.'),
@@ -93,7 +84,7 @@ class _GameLayoutState extends State<GameLayout>
     // Create a new DrawingViewModel for this room
     return ChangeNotifierProvider<DrawingViewModel>(
       // Use create instead of value to ensure a fresh instance
-      create: (_) => DrawingViewModel(roomId: mainViewModel.currentRoomId!),
+      create: (_) => DrawingViewModel(roomId: vm.currentRoomId!),
       child: Scaffold(
         body: SafeArea(
           child: Column(
@@ -130,7 +121,7 @@ class _GameLayoutState extends State<GameLayout>
                       // Center: Word
                       Flexible(
                         child: Text(
-                          mainViewModel.room?.currentWord?.toUpperCase() ??
+                          vm.room?.currentWord?.toUpperCase() ??
                               "HOUSE",
                           overflow: TextOverflow
                               .ellipsis, // Ensure text doesn't overflow
@@ -149,7 +140,7 @@ class _GameLayoutState extends State<GameLayout>
                         constraints:
                             BoxConstraints(), // Remove default constraints
                         onPressed: () {
-                          mainViewModel.leaveRoom();
+                          vm.leaveRoom();
                           Navigator.popUntil(context, (route) => route.isFirst);
                         },
                       ),
@@ -164,7 +155,7 @@ class _GameLayoutState extends State<GameLayout>
                 color: Color.fromARGB(179, 32, 42, 53),
                 alignment: Alignment.center,
                 child: Text(
-                  mainViewModel.room?.hiddenWord ?? '_ _ _ _ _',
+                  vm.room?.hiddenWord ?? '_ _ _ _ _',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -176,7 +167,7 @@ class _GameLayoutState extends State<GameLayout>
               // Drawing board - using Expanded to take remaining space
               Expanded(
                 flex: 60,
-                child: DrawingBoardWidget(roomId: mainViewModel.currentRoomId!),
+                child: DrawingBoardWidget(roomId: vm.currentRoomId!),
               ),
 
               // Tabs and bottom area
@@ -258,10 +249,10 @@ class _GameLayoutState extends State<GameLayout>
                         index: _selectedTabIndex,
                         children: [
                           // Players tab
-                          _buildPlayersList(mainViewModel.currentRoomId!),
+                          _buildPlayersList(vm.currentRoomId!),
 
                           // Chat tab
-                          ChatWidget(roomId: mainViewModel.currentRoomId!),
+                          ChatWidget(roomId: vm.currentRoomId!),
                         ],
                       ),
                     ),
