@@ -21,22 +21,28 @@ class _GameLayoutState extends State<GameLayout>
   int _selectedTabIndex = 0; // 0 for Players, 1 for Chat
 
   // Timer countdown
-  int _seconds = 60;
+  int _seconds = K.roundDuration;
   Timer? _timer;
-  
+
   @override
   void initState() {
-    super.initState();
+    var mainViewModel = Provider.of<MainViewModel>(context, listen: false);
     // Start timer
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
         if (_seconds > 0) {
           _seconds--;
         } else {
-          _timer?.cancel();
+          // _timer?.cancel();
         }
       });
+
+      if (_seconds <= 0) {
+        mainViewModel.startDrawing();
+      }
     });
+    
+    super.initState();
   }
 
   @override
@@ -52,7 +58,6 @@ class _GameLayoutState extends State<GameLayout>
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
-
   int getRemainingTime(drawingStartAt) {
     final currentTime = DateTime.now();
     if (drawingStartAt != null) {
@@ -64,6 +69,7 @@ class _GameLayoutState extends State<GameLayout>
     print('No drawing start time available');
     return K.roundDuration; // Default to full duration if no start time
   }
+
   @override
   Widget build(BuildContext context) {
     final mainViewModel = Provider.of<MainViewModel>(context);
@@ -72,9 +78,9 @@ class _GameLayoutState extends State<GameLayout>
     final remainingTime = getRemainingTime(drawingStartAt);
     // print('Remaining time: $remainingTime');
     _seconds = remainingTime;
-    setState(() {
-      if (remainingTime <=0) {mainViewModel.startDrawing();}
-    });
+    // setState(() {
+
+    // });
     // Check if we have a valid room ID
     if (mainViewModel.currentRoomId == null) {
       return Scaffold(

@@ -184,6 +184,7 @@ class MainViewModel extends ChangeNotifier {
 
   Future<void> startDrawing() async {
     await _firestoreService.startDrawing(_room!.roomCode);
+    notifyListeners();
   }
 
   void _subscribeToRoom(String roomId) {
