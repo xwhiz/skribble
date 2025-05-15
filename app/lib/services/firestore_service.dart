@@ -91,17 +91,27 @@ class FirestoreService {
 
       if (availableRooms.docs.isNotEmpty) {
         // Join an existing room
+
         print('Joining existing room');
+        
+        
         roomId = availableRooms.docs[0].id;
-        DocumentReference roomRef = _db.collection('Room').doc(roomId);
+        DocumentReference roomRef = _db.collection(K.roomCollection).doc(roomId);
 
         // Get the current data
         DocumentSnapshot roomSnapshot = await transaction.get(roomRef);
         Map<String, dynamic> roomData =
             roomSnapshot.data() as Map<String, dynamic>;
 
-        var drawingQueue = roomData['drawingQueue'] ?? [];
-        print("line 104 {drawingQueue: $drawingQueue}");
+        
+        List<dynamic> players = List<dynamic>.from(roomData['players'] ?? []);
+        List<String> drawingQueue = List<String>.from(roomData['drawingQueue'] ?? []);
+
+        if (players.any((player) => player['userId'] == currentUser.uid)) {
+          print("User already in room");
+          return {'roomId': roomId, 'isNewRoom': false};
+        }
+
         drawingQueue.add(currentUser.uid);
         print("line 106 {drawingQueue: $drawingQueue}");
         // Update player count
@@ -344,6 +354,10 @@ class FirestoreService {
       if (currentUser.uid == drawerId) {
         drawingQueue.removeAt(0);
         drawingQueue.add(drawerId);
+
+        drawerId = drawingQueue[0];
+
+        print("Drawing queue: $drawingQueue");
 
         // // Check if there are at least 2 players
         // if (players.length < 2) {
