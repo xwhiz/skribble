@@ -1,7 +1,6 @@
 import 'dart:ui';
 
 import 'package:app/pages/game_layout.dart';
-import 'package:app/services/firestore_service.dart';
 import 'package:app/viewmodels/main_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
