@@ -23,13 +23,18 @@ class MainViewModel extends ChangeNotifier {
   RoomModel? get room => _room;
   bool get isLoading => _isLoading;
   String? get error => _error;
-
   Stream<DocumentSnapshot>? _roomStream;
   String? get currentRoomId => _room?.roomCode;
 
+  bool get isGameCompleted => _room!.currentRound! - 1 == _room?.totalRounds;
+  bool get isCurrentDrawingCompleted =>
+      _room!.guessedCorrectly!.length == _room!.players!.length - 1;
+
   DrawingViewModel? _drawingViewModel;
 
-  Future<void> joinPublicRoom({required bool isGuest}) async {
+  Map<String, int> currentRoundScores = {};
+
+  Future<void> joinPublicRoom() async {
     _setLoading(true);
     _error = null;
 
@@ -38,12 +43,11 @@ class MainViewModel extends ChangeNotifier {
 
       // Ensure guest users are signed in anonymously
       final auth = FirebaseAuth.instance;
-      if (isGuest && auth.currentUser == null) {
-        await auth.signInAnonymously();
-        print("Signed in anonymously as ${auth.currentUser?.uid}");
+      if (auth.currentUser == null) {
+        throw Exception('User not authenticated');
       }
 
-      final result = await _firestoreService.joinPublicRoom(isGuest: isGuest);
+      final result = await _firestoreService.joinPublicRoom();
 
       print("Result from FirestoreService: $result");
 
@@ -223,14 +227,30 @@ class MainViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> addCorrectGuess(String userId) async {
+  Future<void> addCorrectGuessAndScore(String userId, int addedScore) async {
     if (_room == null) {
       print('No active room');
       return;
     }
 
     final roomCode = _room!.roomCode;
-    await _firestoreService.addCorrectGuess(roomCode, userId);
+    await _firestoreService.addCorrectGuessAndScore(
+      roomCode,
+      userId,
+      addedScore,
+    );
+  }
+
+  Future<void> removeRoom() async {
+    if (_room == null) {
+      print('No active room');
+      return;
+    }
+
+    final roomCode = _room!.roomCode;
+    await _firestoreService.removeRoom(roomCode);
+    _room = null;
+    notifyListeners();
   }
 
   void _setLoading(bool value) {
