@@ -1,7 +1,11 @@
+import 'dart:math';
 import 'dart:ui';
+import 'package:app/models/chat_message_model.dart';
+import 'package:app/viewmodels/main_view_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class ChatWidget extends StatefulWidget {
   final String roomId;
@@ -35,76 +39,8 @@ class _ChatWidgetState extends State<ChatWidget> {
     super.dispose();
   }
 
-  Future<void> _sendMessage() async {
-    final String message = _messageController.text.trim();
-    if (message.isEmpty) return;
-
-    final User? currentUser = _auth.currentUser;
-
-    if (currentUser == null) {
-      throw Exception('User not authenticated');
-    }
-
-    final String userName = currentUser.displayName ?? 'Anonymous';
-
-    setState(() {
-      _isSending = true;
-    });
-
-    _messageController.clear();
-
-    try {
-      // Get current room document
-      DocumentReference roomRef =
-          _firestore.collection('Room').doc(widget.roomId);
-
-      // Create message with client-side timestamp (will still be ordered properly)
-      final messageData = {
-        'userId': currentUser.uid,
-        'username': userName,
-        'content': message,
-        'timestamp': Timestamp
-            .now(), // Use client timestamp instead of serverTimestamp()
-      };
-
-      // Add message to room's messages array
-      await roomRef.update({
-        'messages': FieldValue.arrayUnion([messageData])
-      });
-
-      // Auto-scroll to bottom
-      Future.delayed(Duration(milliseconds: 300), () {
-        if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
-      });
-    } catch (e) {
-      print('Failed to send message: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to send message')),
-      );
-    } finally {
-      setState(() {
-        _isSending = false;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final List<Color> messageColors = [
-      const Color(0xFFFFD3B6),
-      const Color(0xFFFFAAA5),
-      const Color(0xFFFCB0B3),
-      const Color(0xFFAEDFF7),
-      const Color(0xFFF7D6E0),
-      const Color(0xFFB5EAD7),
-    ];
-
     return Column(
       children: [
         // Chat messages
@@ -122,13 +58,9 @@ class _ChatWidgetState extends State<ChatWidget> {
                 return const Center(child: Text('Room not found'));
               }
 
-              final messages = (data['messages'] as List<dynamic>? ?? [])
-                  .map((msg) => _ChatMessage.fromJson(msg))
-                  .where((msg) {
-                // Only show messages after login
-                final messageTimestamp = msg.timestamp ?? Timestamp.now();
-                return messageTimestamp.compareTo(_loginTimestamp) >= 0;
-              }).toList();
+              final messages = List<dynamic>.from(data['messages'] ?? [])
+                  .map((msg) => ChatMessage.fromJson(msg))
+                  .toList();
 
               // Auto-scroll to bottom when new messages arrive
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -148,6 +80,15 @@ class _ChatWidgetState extends State<ChatWidget> {
                       itemBuilder: (context, index) {
                         final message = messages[index];
 
+                        Color color = Colors.black;
+                        if (message.type == "correct") {
+                          color = Colors.green;
+                        } else if (message.type == "veryClose") {
+                          color = Colors.yellow;
+                        } else if (message.type == "alreadyGuessed") {
+                          color = Colors.orange.withAlpha(100);
+                        }
+
                         return Padding(
                           padding: const EdgeInsets.symmetric(
                               vertical: 4.0, horizontal: 8.0),
@@ -155,22 +96,21 @@ class _ChatWidgetState extends State<ChatWidget> {
                             alignment: Alignment.centerLeft,
                             child: Container(
                               width: double.infinity,
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 border: Border(
                                   bottom: BorderSide(
-                                    color: Colors
-                                        .grey, // You can change this color
+                                    color: color,
                                     width: 1.0,
                                   ),
                                 ),
                               ),
-                              padding: const EdgeInsets.only(
+                              padding: EdgeInsets.only(
                                   bottom: 4), // Optional spacing below text
                               child: Text(
                                 '${message.username}: ${message.content}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
-                                  color: Color.fromARGB(255, 32, 42, 53),
+                                  color: color,
                                 ),
                               ),
                             ),
@@ -232,28 +172,140 @@ class _ChatWidgetState extends State<ChatWidget> {
       ],
     );
   }
-}
 
-// Simple internal chat message class
-class _ChatMessage {
-  final String userId;
-  final String username;
-  final String content;
-  final Timestamp? timestamp;
+  Future<void> _sendMessage() async {
+    final vm = Provider.of<MainViewModel>(context, listen: false);
+    final User? currentUser = _auth.currentUser;
+    final String message = _messageController.text.trim();
 
-  _ChatMessage({
-    required this.userId,
-    required this.username,
-    required this.content,
-    this.timestamp,
-  });
+    if (message.isEmpty) return;
+    if (currentUser == null) {
+      throw Exception('User not authenticated');
+    }
 
-  factory _ChatMessage.fromJson(Map<String, dynamic> json) {
-    return _ChatMessage(
-      userId: json['userId'] as String? ?? 'anonymous',
-      username: json['username'] as String? ?? 'Anonymous',
-      content: json['content'] as String? ?? '',
-      timestamp: json['timestamp'] as Timestamp?,
-    );
+    final String userName = currentUser.displayName ?? 'Anonymous';
+    final word = vm.room!.currentWord!;
+    bool correctGuess = message.toLowerCase() == word.toLowerCase();
+    int distance = levenshteinDistance(message, word);
+    bool alreadyGuessed = vm.room!.guessedCorrectly != null &&
+        vm.room!.guessedCorrectly!.contains(currentUser.uid);
+
+    print("Distance: $distance");
+
+    setState(() {
+      _isSending = true;
+    });
+    _messageController.clear();
+
+    try {
+      // Get current room document
+      DocumentReference roomRef =
+          _firestore.collection('Room').doc(widget.roomId);
+
+      // Create message with client-side timestamp (will still be ordered properly)
+      final messageData = {
+        'userId': currentUser.uid,
+        'username': userName,
+        'content': message,
+        'timestamp': Timestamp.now(),
+        'type': "text",
+      };
+
+      if (alreadyGuessed) {
+        messageData['type'] = "alreadyGuessed";
+        await roomRef.update({
+          'messages': FieldValue.arrayUnion([messageData])
+        });
+        return;
+      }
+
+      if (correctGuess) {
+        final correctData = {
+          'userId': currentUser.uid,
+          'username': userName,
+          'content': "$userName guessed correctly!",
+          'timestamp': Timestamp.now(),
+          'type': "correct",
+        };
+
+        int totolPlayers = vm.room!.players!.length;
+        int alreadyGuessedPlayers = vm.room!.guessedCorrectly != null
+            ? vm.room!.guessedCorrectly!.length
+            : 0;
+        var drawingStartedAt = vm.room!.drawingStartAt!;
+        var timeElapsed = DateTime.now().difference(drawingStartedAt.toDate());
+        int remainingTime = vm.room!.roundDuration! - timeElapsed.inSeconds;
+
+        // I want to find score based on remaining time and number of players remaining
+        int score = remainingTime * (totolPlayers - alreadyGuessedPlayers);
+
+        await Future.wait([
+          roomRef.update({
+            'messages': FieldValue.arrayUnion([correctData])
+          }),
+          vm.addCorrectGuessAndScore(currentUser.uid, score),
+        ]);
+      } else if (distance <= 2) {
+        final veryCloseData = {
+          'userId': currentUser.uid,
+          'username': userName,
+          'content': "$message is very close!",
+          'timestamp': Timestamp.now(),
+          'type': "veryClose",
+        };
+        await roomRef.update({
+          'messages': FieldValue.arrayUnion([messageData, veryCloseData])
+        });
+      } else {
+        await roomRef.update({
+          'messages': FieldValue.arrayUnion([messageData])
+        });
+      }
+
+      // Auto-scroll to bottom
+      Future.delayed(Duration(milliseconds: 300), () {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    } catch (e) {
+      print('Failed to send message: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to send message')),
+      );
+    } finally {
+      setState(() {
+        _isSending = false;
+      });
+    }
+  }
+
+  int levenshteinDistance(String s, String t) {
+    if (s == t) return 0;
+    if (s.isEmpty) return t.length;
+    if (t.isEmpty) return s.length;
+
+    List<int> v0 = List<int>.filled(t.length + 1, 0);
+    List<int> v1 = List<int>.filled(t.length + 1, 0);
+
+    for (int i = 0; i < v0.length; i++) {
+      v0[i] = i;
+    }
+
+    for (int i = 0; i < s.length; i++) {
+      v1[0] = i + 1;
+      for (int j = 0; j < t.length; j++) {
+        int cost = (s[i] == t[j]) ? 0 : 1;
+        v1[j + 1] = min(v1[j] + 1, min(v0[j + 1] + 1, v0[j] + cost));
+      }
+      List<int> temp = v0;
+      v0 = v1;
+      v1 = temp;
+    }
+    return v0[t.length];
   }
 }
