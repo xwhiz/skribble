@@ -286,15 +286,21 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> login() async {
+    var username = usernameController.text.trim();
+    var password = passwordController.text.trim();
+
+    if (username.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Please provide username and password")));
+      return;
+    }
+
     try {
       setState(() {
         isSigningIn = true;
       });
-      UserCredential userCredential =
-          await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: usernameController.text.trim(),
-        password: passwordController.text.trim(),
-      );
+      UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: username, password: password);
 
       setState(() {
         isSigningIn = false;

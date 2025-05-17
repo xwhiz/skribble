@@ -17,17 +17,24 @@ class _RegisterPageState extends State<RegisterPage> {
   final nameController = TextEditingController();
 
   Future<void> register() async {
+    var email = emailController.text.trim();
+    var password = passwordController.text.trim();
+    var name = nameController.text.trim();
+
+    if (email.isEmpty || password.isEmpty || name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Please provide email, password, and name")));
+      return;
+    }
+
     try {
       UserCredential userCredential = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(
-            email: emailController.text.trim(),
-            password: passwordController.text.trim(),
-          );
+          .createUserWithEmailAndPassword(email: email, password: password);
 
       // After user is created, update the user's display name with the player's name
       User? user = userCredential.user;
       if (user != null) {
-        await user.updateProfile(displayName: nameController.text.trim());
+        await user.updateProfile(displayName: name);
         await user.reload();
       }
 
@@ -178,7 +185,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       const SizedBox(height: 30),
                       SizedBox(
                         width: 400,
-
                         child: ElevatedButton(
                           onPressed: () async {
                             await register();
