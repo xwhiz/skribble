@@ -4,9 +4,10 @@ import 'dart:ui';
 import 'package:app/pages/guest_login.dart';
 import 'package:app/pages/home_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
-import 'register_page.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
+
+import 'register_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -18,29 +19,11 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final usernameController = TextEditingController();
   final passwordController = TextEditingController();
+  // TODO: I think it's unnecessary
   String? playerName;
-  Future<void> login() async {
-    try {
-      UserCredential userCredential =
-          await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: usernameController.text.trim(),
-        password: passwordController.text.trim(),
-      );
 
-      // Get the logged-in user's name (displayName)
-      User? user = userCredential.user;
-      if (user != null) {
-        setState(() {
-          playerName = user.displayName;
-        });
-      }
-    } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(
-        // ignore: use_build_context_synchronously
-        context,
-      ).showSnackBar(SnackBar(content: Text("Login failed: ${e.message}")));
-    }
-  }
+  bool isGuestLogin = false;
+  bool isSigningIn = false;
 
   @override
   Widget build(BuildContext context) {
@@ -192,16 +175,18 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                             elevation: 0,
                           ),
-                          child: const Text(
-                            "Sign In",
-                            style: TextStyle(
-                              fontSize: 24,
-                              color: Color.fromARGB(179, 32, 42, 53),
-                              fontWeight: FontWeight.bold,
-                              fontFamily:
-                                  'ComicNeue', // Applying Comic Neue font
-                            ),
-                          ),
+                          child: isSigningIn
+                              ? CircularProgressIndicator()
+                              : Text(
+                                  "Sign In",
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    color: Color.fromARGB(179, 32, 42, 53),
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily:
+                                        'ComicNeue', // Applying Comic Neue font
+                                  ),
+                                ),
                         ),
                       ),
                       if (playerName != null) ...[
@@ -247,7 +232,15 @@ class _LoginPageState extends State<LoginPage> {
                       SizedBox(
                         width: 400,
                         child: ElevatedButton(
-                          onPressed: () {
+                          onPressed: () async {
+                            setState(() {
+                              isGuestLogin = true;
+                            });
+                            await FirebaseAuth.instance.signInAnonymously();
+                            setState(() {
+                              isGuestLogin = false;
+                            });
+
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -267,16 +260,18 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                             elevation: 0,
                           ),
-                          child: const Text(
-                            "Play As Guest",
-                            style: TextStyle(
-                              fontSize: 24,
-                              color: Color.fromARGB(179, 32, 42, 53),
-                              fontWeight: FontWeight.bold,
-                              fontFamily:
-                                  'ComicNeue', // Applying Comic Neue font
-                            ),
-                          ),
+                          child: isGuestLogin
+                              ? CircularProgressIndicator()
+                              : Text(
+                                  "Play As Guest",
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    color: Color.fromARGB(179, 32, 42, 53),
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily:
+                                        'ComicNeue', // Applying Comic Neue font
+                                  ),
+                                ),
                         ),
                       ),
                     ],
@@ -288,5 +283,33 @@ class _LoginPageState extends State<LoginPage> {
         ),
       ),
     );
+  }
+
+  Future<void> login() async {
+    try {
+      setState(() {
+        isSigningIn = true;
+      });
+      UserCredential userCredential =
+          await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: usernameController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+
+      setState(() {
+        isSigningIn = false;
+      });
+
+      // Get the logged-in user's name (displayName)
+      User? user = userCredential.user;
+      if (user != null) {
+        setState(() {
+          playerName = user.displayName;
+        });
+      }
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Login failed: ${e.message}")));
+    }
   }
 }
