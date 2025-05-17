@@ -1,3 +1,4 @@
+import 'package:app/pages/guest_login.dart';
 import 'package:app/pages/home_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +18,12 @@ class AuthGate extends StatelessWidget {
             body: Center(child: CircularProgressIndicator()),
           );
         } else if (snapshot.hasData) {
+          var user = snapshot.data;
+
+          if (user?.displayName == null) {
+            return const GuestLogin();
+          }
+
           return const HomePage();
         } else {
           return const LoginPage();
