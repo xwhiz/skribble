@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:app/data/constants.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../models/room_model.dart';
 import '../services/firestore_service.dart';
@@ -28,7 +31,7 @@ class MainViewModel extends ChangeNotifier {
 
   bool get isGameCompleted => _room!.currentRound! - 1 == _room?.totalRounds;
   bool get isCurrentDrawingCompleted =>
-      _room!.guessedCorrectly!.length == _room!.players!.length - 1;
+      _room!.guessedCorrectly!.length >= _room!.players!.length - 1;
 
   DrawingViewModel? _drawingViewModel;
 
@@ -141,7 +144,19 @@ class MainViewModel extends ChangeNotifier {
     await _firestoreService.sendMessage(username, message, roomCode, userId);
   }
 
-  Future<void> startDrawing() async {
+  Future<String> getNextDrawerId() async {
+    if (_room == null) {
+      print('No active room');
+      return '';
+    }
+
+    final roomCode = _room!.roomCode;
+    final nextDrawerId = await _firestoreService.getNextDrawerId(roomCode);
+    print("Next drawer ID: $nextDrawerId");
+    return nextDrawerId;
+  }
+
+  Future<void> startNextTurn() async {
     await _firestoreService.startNextTurn(_room!.roomCode);
     notifyListeners();
   }

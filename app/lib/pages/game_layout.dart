@@ -8,6 +8,7 @@ import 'package:app/viewmodels/main_view_model.dart';
 import 'package:app/widgets/chat_widget.dart';
 import 'package:app/widgets/drawing_board_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -28,15 +29,21 @@ class _GameLayoutState extends State<GameLayout>
   bool _isChangingTurn = false;
   bool isWaitingForOtherPlayers = true;
   bool hasChoosenWord = false;
+  bool isCompletedOnce = false;
 
   DrawingViewModel? _drawingViewModel; // initialized late
 
   @override
   void initState() {
     // Start timer
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) async {
       final mainViewModel = Provider.of<MainViewModel>(context, listen: false);
       var players = mainViewModel.room?.players ?? [];
+
+      if (isCompletedOnce) {
+        return;
+      }
+
       if (players.length <= 1) {
         setState(() {
           isWaitingForOtherPlayers = true;
@@ -50,14 +57,12 @@ class _GameLayoutState extends State<GameLayout>
 
       if (mainViewModel.isGameCompleted) {
         timer.cancel();
-
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => const CompletedPage(),
           ),
         );
-
         return;
       }
 
@@ -70,43 +75,26 @@ class _GameLayoutState extends State<GameLayout>
       if (_seconds <= 0 || mainViewModel.isCurrentDrawingCompleted) {
         setState(() {
           _isChangingTurn = true;
+          isCompletedOnce = true;
         });
         _drawingViewModel?.clearCanvas();
-        mainViewModel.startDrawing().then(
-          (value) {
-            setState(() {
-              _isChangingTurn = false;
-            });
-          },
-        );
+        await Provider.of<MainViewModel>(context, listen: false)
+            .startNextTurn();
+        setState(() {
+          _isChangingTurn = false;
+          isCompletedOnce = false;
+        });
       }
     });
 
     super.initState();
+    Provider.of<MainViewModel>(context, listen: false).startNextTurn();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
     super.dispose();
-  }
-
-  // Format seconds as mm:ss
-  String get _timerText {
-    final minutes = _seconds ~/ 60;
-    final seconds = _seconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-  }
-
-  int getRemainingTime(Timestamp? drawingStartAt) {
-    final currentTime = DateTime.now();
-    if (drawingStartAt != null) {
-      final timeElapsed = currentTime.difference(drawingStartAt.toDate());
-      final remainingTime = K.roundDuration - timeElapsed.inSeconds;
-      return remainingTime > 0 ? remainingTime : 0;
-    }
-    print('No drawing start time available');
-    return K.roundDuration; // Default to full duration if no start time
   }
 
   @override
@@ -327,6 +315,24 @@ class _GameLayoutState extends State<GameLayout>
     );
   }
 
+  // Format seconds as mm:ss
+  String get _timerText {
+    final minutes = _seconds ~/ 60;
+    final seconds = _seconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  int getRemainingTime(Timestamp? drawingStartAt) {
+    final currentTime = DateTime.now();
+    if (drawingStartAt != null) {
+      final timeElapsed = currentTime.difference(drawingStartAt.toDate());
+      final remainingTime = K.roundDuration - timeElapsed.inSeconds;
+      return remainingTime > 0 ? remainingTime : 0;
+    }
+    print('No drawing start time available');
+    return K.roundDuration; // Default to full duration if no start time
+  }
+
   Widget _buildPlayersList(String roomId) {
     return Container(
       color: Colors.grey.shade100,
@@ -414,6 +420,15 @@ class _HeaderWidgetState extends State<HeaderWidget> {
   Widget build(BuildContext context) {
     final vm = Provider.of<MainViewModel>(context);
 
+    bool isDrawer =
+        vm.room?.currentDrawerId == FirebaseAuth.instance.currentUser?.uid;
+    bool hasGuessed = vm.room!.guessedCorrectly!.contains(
+      FirebaseAuth.instance.currentUser?.uid,
+    );
+
+    String currentWord = vm.room!.currentWord!;
+    String hiddenWord = vm.room!.hiddenWord!;
+
     return SizedBox(
       height: 40,
       child: Container(
@@ -444,7 +459,7 @@ class _HeaderWidgetState extends State<HeaderWidget> {
             // Center: Word
             Flexible(
               child: Text(
-                vm.room?.currentWord?.toUpperCase() ?? "HOUSE",
+                isDrawer || hasGuessed ? currentWord : hiddenWord,
                 overflow: TextOverflow.ellipsis, // Ensure text doesn't overflow
                 style: TextStyle(
                   color: Colors.white,

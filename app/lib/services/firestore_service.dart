@@ -1,10 +1,12 @@
+import 'dart:convert';
 import 'dart:math';
-import 'dart:ui';
 
 import 'package:app/data/constants.dart';
 import 'package:app/models/room_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -174,8 +176,6 @@ class FirestoreService {
       },
     });
 
-    await startNextTurn(roomCode);
-
     return roomCode;
   }
 
@@ -277,9 +277,6 @@ class FirestoreService {
 
       // Check if this player is the current drawer
       bool isDrawer = roomData['currentDrawerId'] == currentUser.uid;
-      if (isDrawer) {
-        startNextTurn(roomId);
-      }
 
       // Update room
       if (players.isEmpty) {
@@ -291,20 +288,45 @@ class FirestoreService {
           'currentPlayers': FieldValue.increment(-1),
           'players': players,
           'drawingQueue': drawingQueue,
+          // to trigger next turn
+          'guessedCorrectly':
+              players.map((e) => e['userId'] as String).toList(),
         };
-
-        if (isDrawer) {
-          if (players.isNotEmpty) {
-            await startNextTurn(roomId);
-          }
-        }
 
         transaction.update(roomRef, updateData);
       }
     });
   }
 
-  // Start the game
+  Future<String> getNextDrawerId(String roomId) async {
+    DocumentReference roomRef = _db.collection('Room').doc(roomId);
+    DocumentSnapshot roomSnapshot = await roomRef.get();
+
+    if (!roomSnapshot.exists) {
+      return '';
+    }
+
+    Map<String, dynamic> roomData = roomSnapshot.data() as Map<String, dynamic>;
+    List<String> drawingQueue =
+        List<String>.from(roomData['drawingQueue'] ?? []);
+
+    if (drawingQueue.isEmpty) {
+      return '';
+    }
+    return drawingQueue.last;
+  }
+
+  Future<String> getRandomWord() async {
+    final jsonString = await rootBundle.loadString("assets/wordbank.json");
+    var json = jsonDecode(jsonString);
+    List<Map<String, dynamic>> wordObjects =
+        List<Map<String, dynamic>>.from(json);
+
+    List<String> words = wordObjects.map((e) => e['word'] as String).toList();
+    words.shuffle();
+    return words.take(1).toList()[0];
+  }
+
   Future<void> startNextTurn(String roomId) async {
     try {
       final User? currentUser = _auth.currentUser;
@@ -326,13 +348,8 @@ class FirestoreService {
       int currentRound = room.currentRound!;
       String currentDrawerId = room.currentDrawerId!;
 
-      print("==========================================");
-      print("$currentDrawerId $drawingQueue");
-
-      if (drawingQueue.isNotEmpty &&
-          currentDrawerId != '' &&
-          currentUser.uid != currentDrawerId) {
-        print("Current ain't the drawer");
+      if (currentDrawerId != '' && currentDrawerId != currentUser.uid) {
+        print("Current drawer is not the current user");
         return;
       }
 
@@ -340,35 +357,21 @@ class FirestoreService {
         // This means the round has been finished.
         currentRound += 1;
         drawingQueue = players.map((e) => e.userId).toList();
-        print(players);
       }
 
       if (drawingQueue.isNotEmpty) {
         currentDrawerId = drawingQueue.removeLast();
       }
 
-      print("Hello");
-
-      // // Check if there are at least 2 players
-      // if (players.length < 2) {
-      //   return false;
-      // }
-
-      // Choose a random word
-      // String word = _getRandomWord();
-      // String hint = _generateHint(word);
-      // String hiddenWord = _generateHiddenWord(word);
-
-      String currentWord = "apple";
-      // Hidden word is underscores
-      String hiddenWord = currentWord.split('').map((e) => '_').join(' ');
+      String? word = await getRandomWord();
+      String hiddenWord = word.split('').map((e) => '_').join(' ');
 
       // Run this code in a transaction
       await _db.runTransaction((transaction) async {
         transaction.update(roomRef, {
           'currentRound': currentRound,
           'currentDrawerId': currentDrawerId,
-          'currentWord': currentWord,
+          'currentWord': word,
           'hiddenWord': hiddenWord,
           'drawingStartAt': DateTime.now(),
           'drawing': {
@@ -390,7 +393,6 @@ class FirestoreService {
     String userId,
     int addedScore,
   ) async {
-    print("=================");
     try {
       final players = await _db
           .collection('Room')
@@ -400,7 +402,6 @@ class FirestoreService {
 
       List<dynamic> updatedPlayers = players.map((player) {
         if (player['userId'] == userId) {
-          print("${player['score']} + $addedScore");
           return {
             ...player,
             'score': player['score'] + addedScore,
@@ -503,7 +504,4 @@ class FirestoreService {
   }
 
   // Get a random word for the game
-  String _getRandomWord() {
-    return "Hello";
-  }
 }
