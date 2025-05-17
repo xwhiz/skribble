@@ -1,16 +1,14 @@
 import 'dart:async';
 import 'dart:ui';
 
-import 'package:app/pages/login_page.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:provider/provider.dart';
 import 'package:app/pages/create_room.dart';
 import 'package:app/pages/game_layout.dart';
 import 'package:app/pages/join_private_room.dart';
-
+import 'package:app/pages/login_page.dart';
 import 'package:app/viewmodels/main_view_model.dart';
-
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -19,7 +17,6 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Access the ViewModel
     final viewModel = Provider.of<MainViewModel>(context);
 
     return Scaffold(
