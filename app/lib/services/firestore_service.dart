@@ -14,44 +14,6 @@ class FirestoreService {
   String userName =
       FirebaseAuth.instance.currentUser?.displayName ?? 'Unknown User';
 
-  // Future<void> sendMessage(String sender, String message, String roomId) async {
-  //   try {
-  //     if (message.isNotEmpty) {
-  //       await FirebaseFirestore.instance
-  //           .collection('rooms')
-  //           .doc(roomId)
-  //           .collection('messages')
-  //           .add({
-  //             'text': message,
-  //             'sender': sender,
-  //             'timestamp': FieldValue.serverTimestamp(),
-  //           });
-  //     }
-  //   } catch (e) {
-  //     print('Error sending message: $e');
-  //   }
-  // }
-  // Future<void> uploadWordsToFirestore() async {
-  //   // Load the JSON file
-  //   final String jsonString =
-  //       await rootBundle.loadString('assets/wordbank.json');
-
-  //   // Parse JSON as a list
-  //   final List<dynamic> wordsList = json.decode(jsonString);
-
-  //   // Reference to the collection and document
-  //   final CollectionReference wordBankRef =
-  //       FirebaseFirestore.instance.collection('wordbank');
-
-  //   // Add the entire list into a single document
-  //   await wordBankRef.doc('wordsList').set({
-  //     'words': wordsList,
-  //     'timestamp': FieldValue.serverTimestamp(), // Optional
-  //   });
-
-  //   print('All words uploaded in one document!');
-  // }
-
   Future<void> sendMessage(
     String sender,
     String message,
@@ -82,73 +44,6 @@ class FirestoreService {
     }
   }
 
-  // Join a room or create a new one if no rooms are available
-  // Future<Map<String, dynamic>> joinPublicRoom({required bool isGuest}) async {
-  //   final User? currentUser = _auth.currentUser;
-
-  //   if (currentUser == null) {
-  //     throw Exception('User not authenticated');
-  //   }
-  //   // Transaction to ensure atomicity
-  //   return _db.runTransaction<Map<String, dynamic>>((transaction) async {
-  //     // Check for available rooms (status: 'waiting', not full)
-  //     // try {
-  //     var availableRooms = await _db
-  //         .collection('Room')
-  //         .where('status', isEqualTo: 'waiting')
-  //         .where('isPrivate', isEqualTo: false)
-  //         .where('currentPlayers', isLessThan: K.maxPlayers)
-  //         .orderBy('currentPlayers', descending: true)
-  //         .limit(1)
-  //         .get();
-  //     print('Available rooms: ${availableRooms.docs.length}');
-  //     // print(availableRooms);
-  //     // } catch (e, stack) {
-  //     //   print('Failed to join room: $e');
-  //     //   print('Stack trace: $stack');
-  //     // }
-  //     // print(availableRooms);
-  //     String roomId;
-  //     bool isNewRoom = false;
-
-  //     if (availableRooms.docs.isNotEmpty) {
-  //       // Join an existing room
-  //       print('Joining existing room');
-  //       roomId = availableRooms.docs[0].id;
-  //       DocumentReference roomRef = _db.collection('Room').doc(roomId);
-
-  //       // Get the current data
-  //       DocumentSnapshot roomSnapshot = await transaction.get(roomRef);
-  //       Map<String, dynamic> roomData =
-  //           roomSnapshot.data() as Map<String, dynamic>;
-
-  //       // Update player count
-  //       transaction.update(roomRef, {
-  //         'currentPlayers': roomData['currentPlayers'] + 1,
-  //         'players': FieldValue.arrayUnion([
-  //           {
-  //             'userId': currentUser.uid,
-  //             'username': currentUser.displayName ?? 'Anonymous',
-  //             'joinedAt': DateTime.now(),
-  //             'score': 0,
-  //             'isDrawing': false,
-  //           },
-  //         ]),
-  //       });
-  //     } else {
-  //       roomId = await createRoom(
-  //         isPrivate: false,
-  //         maxPlayers: K.maxPlayers,
-  //         totalRounds: K.totalRounds,
-  //         roundDuration: K.roundDuration,
-  //       );
-  //       isNewRoom = true;
-  //       print("No available rooms, created a new one");
-  //     }
-
-  //     return {'roomId': roomId, 'isNewRoom': isNewRoom};
-  //   });
-  // }
   Future<Map<String, dynamic>> joinPublicRoom({required bool isGuest}) async {
     final FirebaseAuth _auth = FirebaseAuth.instance;
     final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -188,10 +83,10 @@ class FirestoreService {
         // Join an existing room
 
         print('Joining existing room');
-        
-        
-        roomId = availableRooms.docs[0].id;
-        DocumentReference roomRef = _db.collection(K.roomCollection).doc(roomId);
+
+        String roomId = availableRooms.docs[0].id;
+        DocumentReference roomRef =
+            _db.collection(K.roomCollection).doc(roomId);
 
         await _db.runTransaction((transaction) async {
           DocumentSnapshot roomSnapshot = await transaction.get(roomRef);
@@ -203,31 +98,33 @@ class FirestoreService {
           Map<String, dynamic> roomData =
               roomSnapshot.data() as Map<String, dynamic>;
 
-        
-        List<dynamic> players = List<dynamic>.from(roomData['players'] ?? []);
-        List<String> drawingQueue = List<String>.from(roomData['drawingQueue'] ?? []);
+          List<dynamic> players = List<dynamic>.from(roomData['players'] ?? []);
+          List<String> drawingQueue =
+              List<String>.from(roomData['drawingQueue'] ?? []);
 
-        if (players.any((player) => player['userId'] == currentUser.uid)) {
-          print("User already in room");
-          return {'roomId': roomId, 'isNewRoom': false};
-        }
+          if (players.any((player) => player['userId'] == currentUser?.uid)) {
+            print("User already in room");
+            return {'roomId': roomId, 'isNewRoom': false};
+          }
 
-        drawingQueue.add(currentUser.uid);
-        print("line 106 {drawingQueue: $drawingQueue}");
-        // Update player count
-        transaction.update(roomRef, {
-          'currentPlayers': roomData['currentPlayers'] + 1,
-          'drawingQueue': drawingQueue,
-          'players': FieldValue.arrayUnion([
-            {
-              'userId': currentUser.uid,
-              'username': currentUser.displayName ?? 'Anonymous',
-              'joinedAt': DateTime.now(),
-              'score': 0,
-              'isDrawing': false,
-            },
-          ]),
+          drawingQueue.add(currentUser!.uid);
+          print("line 106 {drawingQueue: $drawingQueue}");
+          // Update player count
+          transaction.update(roomRef, {
+            'currentPlayers': roomData['currentPlayers'] + 1,
+            'drawingQueue': drawingQueue,
+            'players': FieldValue.arrayUnion([
+              {
+                'userId': currentUser.uid,
+                'username': currentUser.displayName ?? 'Anonymous',
+                'joinedAt': DateTime.now(),
+                'score': 0,
+                'isDrawing': false,
+              },
+            ]),
+          });
         });
+        return {'roomId': roomId, 'isNewRoom': false};
       } else {
         // No room found – create a new public room
         String newRoomId = await createRoom(
@@ -397,14 +294,10 @@ class FirestoreService {
         return; // Player not found
       }
 
-      // Remove player from player and drawing queue list
-      print("line before this");
-
       //Find the player to remove from drawing Queue
       players.removeAt(playerIndex);
       List<String> drawingQueue =
           List<String>.from(roomData['drawingQueue'] ?? []);
-      print("line after this");
       int playerDrawingQueueIndex =
           drawingQueue.indexWhere((userId) => userId == currentUser.uid);
       drawingQueue.removeAt(playerDrawingQueueIndex);
