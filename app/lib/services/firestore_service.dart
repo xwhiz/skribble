@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:app/data/constants.dart';
 import 'package:app/models/room_model.dart';
@@ -57,13 +58,15 @@ class FirestoreService {
     try {
       // Step 1: Look for available public rooms
       QuerySnapshot availableRooms = await db
-          .collection('Room')
+          .collection(K.roomCollection)
           .where('status', isEqualTo: 'waiting')
           .where('isPrivate', isEqualTo: false)
           .where('currentPlayers', isLessThan: K.maxPlayers)
           .orderBy('currentPlayers', descending: true)
           .limit(1)
           .get();
+
+      print(availableRooms.docs);
 
       if (availableRooms.docs.isNotEmpty) {
         print('Joining existing room');
@@ -329,15 +332,14 @@ class FirestoreService {
       var drawingQueue = room.drawingQueue!;
       bool isNewRoundStarting = drawingQueue.isEmpty;
       int currentRound = room.currentRound!;
-      String currentDrawerId = drawingQueue.last;
+      String? currentDrawerId =
+          drawingQueue.isNotEmpty ? drawingQueue.last : null;
 
-      print(currentDrawerId);
+      print("$isNewRoundStarting $drawingQueue $currentDrawerId");
 
       if (!isNewRoundStarting) drawingQueue.removeLast();
 
-      print(isNewRoundStarting);
-
-      if (currentUser.uid != currentDrawerId) {
+      if (currentDrawerId != null && currentUser.uid != currentDrawerId) {
         print("Current ain't the drawer");
         return;
       }
@@ -362,21 +364,23 @@ class FirestoreService {
       // String hint = _generateHint(word);
       // String hiddenWord = _generateHiddenWord(word);
 
-      // Update room status
-      await roomRef.update({
-        // 'status': 'playing',
-        'currentRound': currentRound,
-        'currentDrawerId': currentDrawerId,
-        'currentWord': "Hello",
-        'hiddenWord': "Hello",
-        'drawingStartAt': DateTime.now(),
-        'drawing': {
-          'elements': [],
-          'lastUpdatedBy': currentDrawerId,
-          'lastUpdatedAt': DateTime.now(),
-        },
-        'drawingQueue': drawingQueue,
-        'guessedCorrectly': [],
+      // Run this code in a transaction
+      await _db.runTransaction((transaction) async {
+        transaction.update(roomRef, {
+          'status': 'waiting',
+          'currentRound': currentRound,
+          'currentDrawerId': currentDrawerId,
+          'currentWord': "Hello",
+          'hiddenWord': "Hello",
+          'drawingStartAt': DateTime.now(),
+          'drawing': {
+            'elements': [],
+            'lastUpdatedBy': currentDrawerId,
+            'lastUpdatedAt': DateTime.now(),
+          },
+          'drawingQueue': drawingQueue,
+          'guessedCorrectly': [],
+        });
       });
     } catch (e) {
       print('Error starting game: $e');
