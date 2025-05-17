@@ -133,30 +133,25 @@ class _GameLayoutState extends State<GameLayout>
               //   ),
               // ),
 
-              if (_isChangingTurn)
-                Expanded(
-                  flex: 60,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                      SizedBox(height: 20),
-                      Text(
-                        'Changing turn...',
-                        style: TextStyle(fontSize: 18),
-                      ),
-                    ],
-                  ),
-                ),
-
-              if (!_isChangingTurn)
-                // Drawing board - using Expanded to take remaining space
-                Expanded(
-                  flex: 60,
-                  child: DrawingBoardWidget(roomId: vm.currentRoomId!),
-                ),
+              // Drawing board - using Expanded to take remaining space
+              Expanded(
+                flex: 60,
+                child: _isChangingTurn
+                    ? Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                          SizedBox(height: 20),
+                          Text(
+                            'Changing turn...',
+                            style: TextStyle(fontSize: 18),
+                          ),
+                        ],
+                      )
+                    : DrawingBoardWidget(roomId: vm.currentRoomId!),
+              ),
 
               // Tabs and bottom area
               Expanded(
