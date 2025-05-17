@@ -26,6 +26,7 @@ class _GameLayoutState extends State<GameLayout>
   int _seconds = K.roundDuration;
   Timer? _timer;
   bool _isChangingTurn = false;
+  bool isWaitingForOtherPlayers = true;
   DrawingViewModel? _drawingViewModel; // initialized late
 
   @override
@@ -33,6 +34,17 @@ class _GameLayoutState extends State<GameLayout>
     // Start timer
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
       final mainViewModel = Provider.of<MainViewModel>(context, listen: false);
+      var players = mainViewModel.room?.players ?? [];
+      if (players.length <= 1) {
+        setState(() {
+          isWaitingForOtherPlayers = true;
+        });
+        return;
+      } else {
+        setState(() {
+          isWaitingForOtherPlayers = false;
+        });
+      }
 
       if (mainViewModel.isGameCompleted) {
         timer.cancel();
@@ -99,6 +111,16 @@ class _GameLayoutState extends State<GameLayout>
   Widget build(BuildContext context) {
     final vm = Provider.of<MainViewModel>(context);
     _seconds = getRemainingTime(vm.room?.drawingStartAt);
+
+    print(vm.room?.currentRound);
+
+    if (isWaitingForOtherPlayers) {
+      return Scaffold(
+        body: Center(
+          child: Text('Searching for players...'),
+        ),
+      );
+    }
 
     // Check if we have a valid room ID
     if (vm.currentRoomId == null) {
