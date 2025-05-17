@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:app/pages/login_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:app/pages/create_room.dart';
@@ -121,6 +122,20 @@ class HomePage extends StatelessWidget {
                                       MaterialPageRoute(
                                         builder: (_) => const CreateRoom(),
                                       ),
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: 10),
+                                _buildButton(
+                                  context,
+                                  icon: Icons.exit_to_app,
+                                  text: "Sign Out",
+                                  onTap: () async {
+                                    await _auth.signOut();
+                                    Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (_) => LoginPage()),
                                     );
                                   },
                                 ),
