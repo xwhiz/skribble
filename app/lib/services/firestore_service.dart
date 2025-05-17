@@ -341,7 +341,6 @@ class FirestoreService {
         currentRound += 1;
         drawingQueue = players.map((e) => e.userId).toList();
         print(players);
-        currentDrawerId = drawingQueue.last;
       }
 
       if (drawingQueue.isNotEmpty) {
