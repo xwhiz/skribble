@@ -71,7 +71,7 @@ class DrawingViewModel extends ChangeNotifier {
     if (!_isMyTurn && data['drawing'] != null) {
       final drawingData = data['drawing'] as Map<String, dynamic>;
       print('Drawing data: $drawingData');
-      final timestamp = drawingData['timestamp'] as int;
+      final timestamp = (drawingData['timestamp'] ?? 0) as int;
 
       // Only process updates newer than our last update and not from ourselves
       if (timestamp > _lastUpdateTimestamp) {
