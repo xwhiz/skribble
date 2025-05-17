@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:app/data/constants.dart';
+import 'package:app/pages/completed_page.dart';
 import 'package:app/pages/home_page.dart';
 import 'package:app/viewmodels/drawing_view_model.dart';
 import 'package:app/viewmodels/main_view_model.dart';
@@ -24,24 +25,35 @@ class _GameLayoutState extends State<GameLayout>
   // Timer countdown
   int _seconds = K.roundDuration;
   Timer? _timer;
-
   bool _isChangingTurn = false;
-
   DrawingViewModel? _drawingViewModel; // initialized late
 
   @override
   void initState() {
-    final mainViewModel = Provider.of<MainViewModel>(context, listen: false);
-
     // Start timer
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+      final mainViewModel = Provider.of<MainViewModel>(context, listen: false);
+
+      if (mainViewModel.isGameCompleted) {
+        timer.cancel();
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const CompletedPage(),
+          ),
+        );
+
+        return;
+      }
+
       setState(() {
         if (_seconds > 0) {
           _seconds--;
         }
       });
 
-      if (_seconds <= 0) {
+      if (_seconds <= 0 || mainViewModel.isCurrentDrawingCompleted) {
         setState(() {
           _isChangingTurn = true;
         });
@@ -72,7 +84,7 @@ class _GameLayoutState extends State<GameLayout>
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
-  int getRemainingTime(drawingStartAt) {
+  int getRemainingTime(Timestamp? drawingStartAt) {
     final currentTime = DateTime.now();
     if (drawingStartAt != null) {
       final timeElapsed = currentTime.difference(drawingStartAt.toDate());
@@ -86,7 +98,6 @@ class _GameLayoutState extends State<GameLayout>
   @override
   Widget build(BuildContext context) {
     final vm = Provider.of<MainViewModel>(context);
-
     _seconds = getRemainingTime(vm.room?.drawingStartAt);
 
     // Check if we have a valid room ID
