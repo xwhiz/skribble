@@ -386,44 +386,30 @@ class FirestoreService {
     String userId,
     int addedScore,
   ) async {
+    print("=================");
     try {
-      DocumentReference roomRef = _db.collection('Room').doc(roomId);
-      DocumentSnapshot roomSnapshot = await roomRef.get();
+      final players = await _db
+          .collection('Room')
+          .doc(roomId)
+          .get()
+          .then((value) => value.data()?['players'] as List<dynamic>? ?? []);
 
-      if (!roomSnapshot.exists) {
-        throw Exception('Room not found');
-      }
+      List<dynamic> updatedPlayers = players.map((player) {
+        if (player['userId'] == userId) {
+          print("${player['score']} + $addedScore");
+          return {
+            ...player,
+            'score': player['score'] + addedScore,
+          };
+        } else {
+          return player;
+        }
+      }).toList();
 
-      Map<String, dynamic>? data = roomSnapshot.data() as Map<String, dynamic>?;
-
-      int currentScore = data?['players']?.firstWhere(
-            (player) => player['userId'] == userId,
-            orElse: () => {'score': 0},
-          )['score'] ??
-          0;
-
-      if (data != null && data['currentDrawerId'] == userId) {
-        var players = data['players'] as List<dynamic>;
-        var guessedCorrectly = data['guessedCorrectly'] as List<dynamic>;
-
-        List<dynamic> updatedPlayers = players.map((player) {
-          if (player['userId'] == userId) {
-            return {
-              ...player,
-              'score': player['score'] + addedScore,
-            };
-          } else {
-            return player;
-          }
-        }).toList();
-
-        print(updatedPlayers);
-
-        await roomRef.update({
-          'guessedCorrectly': FieldValue.arrayUnion([userId]),
-          'players': updatedPlayers,
-        });
-      }
+      await _db.collection('Room').doc(roomId).update({
+        'guessedCorrectly': FieldValue.arrayUnion([userId]),
+        'players': updatedPlayers,
+      });
     } catch (e) {
       print('Error adding correct guess: $e');
     }
