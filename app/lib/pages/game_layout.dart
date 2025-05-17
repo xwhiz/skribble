@@ -27,6 +27,8 @@ class _GameLayoutState extends State<GameLayout>
   Timer? _timer;
   bool _isChangingTurn = false;
   bool isWaitingForOtherPlayers = true;
+  bool hasChoosenWord = false;
+
   DrawingViewModel? _drawingViewModel; // initialized late
 
   @override
@@ -118,8 +120,50 @@ class _GameLayoutState extends State<GameLayout>
 
     if (isWaitingForOtherPlayers) {
       return Scaffold(
-        body: Center(
-          child: Text('Searching for players...'),
+        body: SizedBox(
+          width: double.infinity,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            spacing: 20,
+            children: [
+              Text('Searching for players...',
+                  style: Theme.of(context).textTheme.displaySmall),
+              ElevatedButton(
+                onPressed: () async {
+                  await vm.leaveRoom();
+
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const HomePage(),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  // ignore: deprecated_member_use
+                  backgroundColor: Theme.of(context).primaryColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 50,
+                    vertical: 15,
+                  ),
+                  elevation: 0,
+                ),
+                child: Text(
+                  "Stop Searching",
+                  style: TextStyle(
+                    fontSize: 24,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'ComicNeue', // Applying Comic Neue font
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
