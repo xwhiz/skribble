@@ -23,13 +23,11 @@ class _ChatWidgetState extends State<ChatWidget> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  late Timestamp _loginTimestamp;
   bool _isSending = false;
 
   @override
   void initState() {
     super.initState();
-    _loginTimestamp = Timestamp.now();
   }
 
   @override
@@ -214,13 +212,13 @@ class _ChatWidgetState extends State<ChatWidget> {
         'type': "text",
       };
 
-      // if (alreadyGuessed) {
-      //   messageData['type'] = "alreadyGuessed";
-      //   await roomRef.update({
-      //     'messages': FieldValue.arrayUnion([messageData])
-      //   });
-      //   return;
-      // }
+      if (alreadyGuessed) {
+        messageData['type'] = "alreadyGuessed";
+        await roomRef.update({
+          'messages': FieldValue.arrayUnion([messageData])
+        });
+        return;
+      }
 
       if (correctGuess) {
         final correctData = {
