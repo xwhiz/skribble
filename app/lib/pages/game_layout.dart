@@ -1,4 +1,3 @@
-import 'package:app/services/firestore_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -9,8 +8,6 @@ import 'package:app/widgets/chat_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import 'package:app/data/constants.dart';
-
-import 'package:shared_preferences/shared_preferences.dart';
 
 class GameLayout extends StatefulWidget {
   const GameLayout({Key? key}) : super(key: key);
@@ -301,7 +298,9 @@ class _GameLayoutState extends State<GameLayout>
 
                                 // Chat tab
                                 ChatWidget(
-                                    roomId: mainViewModel.currentRoomId!),
+                                  roomId: vm.currentRoomId!,
+                                  guestName: _guestName,
+                                ),
                               ],
                             ),
                           ),
