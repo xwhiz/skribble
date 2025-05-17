@@ -1,3 +1,5 @@
+import 'package:app/services/firestore_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:app/viewmodels/main_view_model.dart';
@@ -7,6 +9,8 @@ import 'package:app/widgets/chat_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import 'package:app/data/constants.dart';
+
+import 'package:shared_preferences/shared_preferences.dart';
 
 class GameLayout extends StatefulWidget {
   const GameLayout({Key? key}) : super(key: key);
@@ -18,6 +22,7 @@ class GameLayout extends StatefulWidget {
 class _GameLayoutState extends State<GameLayout>
     with SingleTickerProviderStateMixin {
   int _selectedTabIndex = 0; // 0 for Players, 1 for Chat
+  late String _guestName;
 
   // Timer countdown
   int _seconds = K.roundDuration;
@@ -29,7 +34,16 @@ class _GameLayoutState extends State<GameLayout>
 
   @override
   void initState() {
-    var mainViewModel = Provider.of<MainViewModel>(context, listen: false);
+    super.initState();
+
+    final mainViewModel = Provider.of<MainViewModel>(context, listen: false);
+
+    mainViewModel.getGuestName().then((name) {
+      setState(() {
+        _guestName = name;
+      });
+    });
+
     // Start timer
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
@@ -286,7 +300,8 @@ class _GameLayoutState extends State<GameLayout>
                                 _buildPlayersList(vm.currentRoomId!),
 
                                 // Chat tab
-                                ChatWidget(roomId: vm.currentRoomId!),
+                                ChatWidget(
+                                    roomId: mainViewModel.currentRoomId!),
                               ],
                             ),
                           ),
@@ -346,7 +361,12 @@ class _GameLayoutState extends State<GameLayout>
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        player['username'] ?? 'Anonymous',
+                        player['username']?.toString().isNotEmpty == true
+                            ? player['username']
+                            : (player['userId'] ==
+                                    FirebaseAuth.instance.currentUser?.uid
+                                ? _guestName
+                                : 'Guest'),
                         style: TextStyle(
                           fontWeight:
                               isDrawing ? FontWeight.bold : FontWeight.normal,

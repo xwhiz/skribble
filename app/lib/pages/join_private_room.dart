@@ -6,14 +6,29 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class JoinPrivateRoom extends StatefulWidget {
-  const JoinPrivateRoom({super.key});
+  const JoinPrivateRoom({super.key, required String guestName});
 
   @override
   State<JoinPrivateRoom> createState() => _JoinPrivateRoomState();
 }
 
 class _JoinPrivateRoomState extends State<JoinPrivateRoom> {
+  late String _guestName;
+  String get guestName => _guestName;
   final TextEditingController codeController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    final viewModel = Provider.of<MainViewModel>(context, listen: false);
+
+    viewModel.getGuestName().then((name) {
+      setState(() {
+        _guestName = name;
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final matchMakingViewModel = Provider.of<MainViewModel>(context);
@@ -86,6 +101,7 @@ class _JoinPrivateRoomState extends State<JoinPrivateRoom> {
                         onPressed: () async {
                           await matchMakingViewModel.joinPrivateRoom(
                             codeController.text,
+                            guestName: guestName,
                           );
                           Navigator.push(
                             context,
