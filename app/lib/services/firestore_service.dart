@@ -174,7 +174,7 @@ class FirestoreService {
       },
     });
 
-    await startDrawing(roomCode);
+    await startNextTurn(roomCode);
 
     return roomCode;
   }
@@ -278,7 +278,7 @@ class FirestoreService {
       // Check if this player is the current drawer
       bool isDrawer = roomData['currentDrawerId'] == currentUser.uid;
       if (isDrawer) {
-        startDrawing(roomId);
+        startNextTurn(roomId);
       }
 
       // Update room
@@ -295,7 +295,7 @@ class FirestoreService {
 
         if (isDrawer) {
           if (players.isNotEmpty) {
-            await startDrawing(roomId);
+            await startNextTurn(roomId);
           }
         }
 
@@ -305,7 +305,7 @@ class FirestoreService {
   }
 
   // Start the game
-  Future<void> startDrawing(String roomId) async {
+  Future<void> startNextTurn(String roomId) async {
     try {
       final User? currentUser = _auth.currentUser;
       DocumentReference roomRef = _db.collection('Room').doc(roomId);
@@ -326,9 +326,12 @@ class FirestoreService {
       int currentRound = room.currentRound!;
       String currentDrawerId = room.currentDrawerId!;
 
-      if (drawingQueue.isNotEmpty) drawingQueue.removeLast();
+      print("==========================================");
+      print("$currentDrawerId $drawingQueue");
 
-      if (currentUser.uid != currentDrawerId) {
+      if (drawingQueue.isNotEmpty &&
+          currentDrawerId != '' &&
+          currentUser.uid != currentDrawerId) {
         print("Current ain't the drawer");
         return;
       }
@@ -339,6 +342,10 @@ class FirestoreService {
         drawingQueue = players.map((e) => e.userId).toList();
         print(players);
         currentDrawerId = drawingQueue.last;
+      }
+
+      if (drawingQueue.isNotEmpty) {
+        currentDrawerId = drawingQueue.removeLast();
       }
 
       print("Hello");
