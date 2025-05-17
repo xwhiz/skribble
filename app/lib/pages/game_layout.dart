@@ -25,16 +25,20 @@ class _GameLayoutState extends State<GameLayout>
   late String _guestName;
 
   // Timer countdown
-  int _seconds = 60;
+  int _seconds = K.roundDuration;
   Timer? _timer;
+
+  bool _isChangingTurn = false;
+
+  DrawingViewModel? _drawingViewModel;
 
   @override
   void initState() {
     super.initState();
 
-    final viewModel = Provider.of<MainViewModel>(context, listen: false);
+    final mainViewModel = Provider.of<MainViewModel>(context, listen: false);
 
-    viewModel.getGuestName().then((name) {
+    mainViewModel.getGuestName().then((name) {
       setState(() {
         _guestName = name;
       });
@@ -45,11 +49,25 @@ class _GameLayoutState extends State<GameLayout>
       setState(() {
         if (_seconds > 0) {
           _seconds--;
-        } else {
-          _timer?.cancel();
         }
       });
+
+      if (_seconds <= 0) {
+        setState(() {
+          _isChangingTurn = true;
+        });
+        _drawingViewModel?.clearCanvas();
+        mainViewModel.startDrawing().then(
+          (value) {
+            setState(() {
+              _isChangingTurn = false;
+            });
+          },
+        );
+      }
     });
+
+    super.initState();
   }
 
   @override
@@ -65,28 +83,25 @@ class _GameLayoutState extends State<GameLayout>
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
-
   int getRemainingTime(drawingStartAt) {
     final currentTime = DateTime.now();
     if (drawingStartAt != null) {
       final timeElapsed = currentTime.difference(drawingStartAt.toDate());
-      print('Time elapsed: ${timeElapsed.inSeconds} seconds');
       final remainingTime = K.roundDuration - timeElapsed.inSeconds;
       return remainingTime > 0 ? remainingTime : 0;
     }
     print('No drawing start time available');
     return K.roundDuration; // Default to full duration if no start time
   }
+
   @override
   Widget build(BuildContext context) {
-    final mainViewModel = Provider.of<MainViewModel>(context);
-    final drawingStartAt = mainViewModel.room?.drawingStartAt;
-    print("drawingStartAt: $drawingStartAt");
-    final remainingTime = getRemainingTime(drawingStartAt);
-    print('Remaining time: $remainingTime');
-    _seconds = remainingTime;
+    final vm = Provider.of<MainViewModel>(context);
+
+    _seconds = getRemainingTime(vm.room?.drawingStartAt);
+
     // Check if we have a valid room ID
-    if (mainViewModel.currentRoomId == null) {
+    if (vm.currentRoomId == null) {
       return Scaffold(
         body: Center(
           child: Text('No active room. Please join a room first.'),
@@ -97,185 +112,204 @@ class _GameLayoutState extends State<GameLayout>
     // Create a new DrawingViewModel for this room
     return ChangeNotifierProvider<DrawingViewModel>(
       // Use create instead of value to ensure a fresh instance
-      create: (_) => DrawingViewModel(roomId: mainViewModel.currentRoomId!),
+      create: (_) {
+        var drawingVM = DrawingViewModel(roomId: vm.currentRoomId!);
+        _drawingViewModel = drawingVM;
+        return drawingVM;
+      },
       child: Scaffold(
         body: SafeArea(
-          child: Column(
-            children: [
-              // Top header with timer - FIXED HEIGHT to prevent overflow
-              SizedBox(
-                height: 40,
-                child: Container(
-                  color: Color.fromARGB(179, 32, 42, 53),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Left: Timer indicator
-                      Padding(
-                        padding: const EdgeInsets.only(left: 12.0),
+          child: _isChangingTurn
+              ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                    SizedBox(height: 20),
+                    Text(
+                      'Changing turn...',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                  ],
+                )
+              : Column(
+                  children: [
+                    // Top header with timer - FIXED HEIGHT to prevent overflow
+                    SizedBox(
+                      height: 40,
+                      child: Container(
+                        color: Color.fromARGB(179, 32, 42, 53),
                         child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Icon(Icons.timer, color: Colors.white, size: 16),
-                            SizedBox(width: 4),
-                            Text(
-                              _timerText,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize:
-                                    14, // Smaller font size to ensure it fits
+                            // Left: Timer indicator
+                            Padding(
+                              padding: const EdgeInsets.only(left: 12.0),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.timer,
+                                      color: Colors.white, size: 16),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    _timerText,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize:
+                                          14, // Smaller font size to ensure it fits
+                                    ),
+                                  ),
+                                ],
                               ),
+                            ),
+
+                            // Center: Word
+                            Flexible(
+                              child: Text(
+                                vm.room?.currentWord?.toUpperCase() ?? "HOUSE",
+                                overflow: TextOverflow
+                                    .ellipsis, // Ensure text doesn't overflow
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+
+                            // Right: Exit button - Using IconButton with smaller constraints
+                            IconButton(
+                              icon:
+                                  Icon(Icons.exit_to_app, color: Colors.white),
+                              padding: EdgeInsets.zero,
+                              constraints:
+                                  BoxConstraints(), // Remove default constraints
+                              onPressed: () {
+                                vm.leaveRoom();
+                                Navigator.popUntil(
+                                    context, (route) => route.isFirst);
+                              },
                             ),
                           ],
                         ),
                       ),
+                    ),
 
-                      // Center: Word
-                      Flexible(
-                        child: Text(
-                          mainViewModel.room?.currentWord?.toUpperCase() ??
-                              "HOUSE",
-                          overflow: TextOverflow
-                              .ellipsis, // Ensure text doesn't overflow
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-
-                      // Right: Exit button - Using IconButton with smaller constraints
-                      IconButton(
-                        icon: Icon(Icons.exit_to_app, color: Colors.white),
-                        padding: EdgeInsets.zero,
-                        constraints:
-                            BoxConstraints(), // Remove default constraints
-                        onPressed: () {
-                          mainViewModel.leaveRoom();
-                          Navigator.popUntil(context, (route) => route.isFirst);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Word display bar
-              Container(
-                height: 20,
-                color: Color.fromARGB(179, 32, 42, 53),
-                alignment: Alignment.center,
-                child: Text(
-                  mainViewModel.room?.hiddenWord ?? '_ _ _ _ _',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-
-              // Drawing board - using Expanded to take remaining space
-              Expanded(
-                flex: 60,
-                child: DrawingBoardWidget(roomId: mainViewModel.currentRoomId!),
-              ),
-
-              // Tabs and bottom area
-              Expanded(
-                flex: 40,
-                child: Column(
-                  children: [
-                    // Tab selector
+                    // Word display bar
                     Container(
-                      height: 36,
-                      color: Colors.grey[200],
-                      child: Row(
-                        children: [
-                          // Players tab
-                          Expanded(
-                            child: InkWell(
-                              onTap: () =>
-                                  setState(() => _selectedTabIndex = 0),
-                              child: Container(
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  border: Border(
-                                    bottom: BorderSide(
-                                      color: _selectedTabIndex == 0
-                                          ? Colors.blue
-                                          : Colors.transparent,
-                                      width: 3,
-                                    ),
-                                  ),
-                                ),
-                                child: Text(
-                                  'Players',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: _selectedTabIndex == 0
-                                        ? Colors.blue
-                                        : Colors.black,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          // Chat tab
-                          Expanded(
-                            child: InkWell(
-                              onTap: () =>
-                                  setState(() => _selectedTabIndex = 1),
-                              child: Container(
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  border: Border(
-                                    bottom: BorderSide(
-                                      color: _selectedTabIndex == 1
-                                          ? Colors.blue
-                                          : Colors.transparent,
-                                      width: 3,
-                                    ),
-                                  ),
-                                ),
-                                child: Text(
-                                  'Chat',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: _selectedTabIndex == 1
-                                        ? Colors.blue
-                                        : Colors.black,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                      height: 20,
+                      color: Color.fromARGB(179, 32, 42, 53),
+                      alignment: Alignment.center,
+                      child: Text(
+                        vm.room?.hiddenWord ?? '_ _ _ _ _',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
 
-                    // Tab content - takes remaining space
+                    // Drawing board - using Expanded to take remaining space
                     Expanded(
-                      child: IndexedStack(
-                        index: _selectedTabIndex,
-                        children: [
-                          // Players tab
-                          _buildPlayersList(mainViewModel.currentRoomId!),
+                      flex: 60,
+                      child: DrawingBoardWidget(roomId: vm.currentRoomId!),
+                    ),
 
-                          // Chat tab
-                          ChatWidget(
-                              roomId: mainViewModel.currentRoomId!,
-                              guestName: _guestName),
+                    // Tabs and bottom area
+                    Expanded(
+                      flex: 40,
+                      child: Column(
+                        children: [
+                          // Tab selector
+                          Container(
+                            height: 36,
+                            color: Colors.grey[200],
+                            child: Row(
+                              children: [
+                                // Players tab
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: () =>
+                                        setState(() => _selectedTabIndex = 0),
+                                    child: Container(
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        border: Border(
+                                          bottom: BorderSide(
+                                            color: _selectedTabIndex == 0
+                                                ? Colors.blue
+                                                : Colors.transparent,
+                                            width: 3,
+                                          ),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        'Players',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: _selectedTabIndex == 0
+                                              ? Colors.blue
+                                              : Colors.black,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Chat tab
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: () =>
+                                        setState(() => _selectedTabIndex = 1),
+                                    child: Container(
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        border: Border(
+                                          bottom: BorderSide(
+                                            color: _selectedTabIndex == 1
+                                                ? Colors.blue
+                                                : Colors.transparent,
+                                            width: 3,
+                                          ),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        'Chat',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: _selectedTabIndex == 1
+                                              ? Colors.blue
+                                              : Colors.black,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Tab content - takes remaining space
+                          Expanded(
+                            child: IndexedStack(
+                              index: _selectedTabIndex,
+                              children: [
+                                // Players tab
+                                _buildPlayersList(vm.currentRoomId!),
+
+                                // Chat tab
+                                ChatWidget(
+                                    roomId: mainViewModel.currentRoomId!),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
         ),
       ),
     );

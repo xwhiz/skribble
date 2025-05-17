@@ -1,10 +1,6 @@
 import 'package:app/data/constants.dart';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
-import 'dart:convert';
-import 'package:flutter/services.dart' show rootBundle;
 import 'dart:math';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -189,9 +185,13 @@ class FirestoreService {
           .get();
 
       if (availableRooms.docs.isNotEmpty) {
-        // Join existing room
-        String roomId = availableRooms.docs[0].id;
-        DocumentReference roomRef = _db.collection('Room').doc(roomId);
+        // Join an existing room
+
+        print('Joining existing room');
+        
+        
+        roomId = availableRooms.docs[0].id;
+        DocumentReference roomRef = _db.collection(K.roomCollection).doc(roomId);
 
         await _db.runTransaction((transaction) async {
           DocumentSnapshot roomSnapshot = await transaction.get(roomRef);
@@ -203,21 +203,31 @@ class FirestoreService {
           Map<String, dynamic> roomData =
               roomSnapshot.data() as Map<String, dynamic>;
 
-          transaction.update(roomRef, {
-            'currentPlayers': roomData['currentPlayers'] + 1,
-            'players': FieldValue.arrayUnion([
-              {
-                'userId': userId,
-                'username': userName,
-                'joinedAt': DateTime.now(),
-                'score': 0,
-                'isDrawing': false,
-              },
-            ]),
-          });
-        });
+        
+        List<dynamic> players = List<dynamic>.from(roomData['players'] ?? []);
+        List<String> drawingQueue = List<String>.from(roomData['drawingQueue'] ?? []);
 
-        return {'roomId': roomId, 'isNewRoom': false};
+        if (players.any((player) => player['userId'] == currentUser.uid)) {
+          print("User already in room");
+          return {'roomId': roomId, 'isNewRoom': false};
+        }
+
+        drawingQueue.add(currentUser.uid);
+        print("line 106 {drawingQueue: $drawingQueue}");
+        // Update player count
+        transaction.update(roomRef, {
+          'currentPlayers': roomData['currentPlayers'] + 1,
+          'drawingQueue': drawingQueue,
+          'players': FieldValue.arrayUnion([
+            {
+              'userId': currentUser.uid,
+              'username': currentUser.displayName ?? 'Anonymous',
+              'joinedAt': DateTime.now(),
+              'score': 0,
+              'isDrawing': false,
+            },
+          ]),
+        });
       } else {
         // No room found – create a new public room
         String newRoomId = await createRoom(
@@ -277,6 +287,7 @@ class FirestoreService {
           'isDrawing': false,
         },
       ],
+      'drawingQueue': [currentUser.uid],
       'roundDuration': roundDuration,
       'createdAt': DateTime.now(),
       'drawingStartAt': DateTime.now(),
@@ -286,6 +297,8 @@ class FirestoreService {
         'lastUpdatedAt': DateTime.now(),
       },
     });
+
+    await startDrawing(roomCode);
 
     return roomCode;
   }
@@ -376,7 +389,7 @@ class FirestoreService {
           roomSnapshot.data() as Map<String, dynamic>;
       List<dynamic> players = roomData['players'] ?? [];
 
-      // Find the player to remove
+      // Find the player to remove from players list
       int playerIndex = players.indexWhere(
         (player) => player['userId'] == currentUser.uid,
       );
@@ -384,11 +397,23 @@ class FirestoreService {
         return; // Player not found
       }
 
+      // Remove player from player and drawing queue list
+      print("line before this");
+
+      //Find the player to remove from drawing Queue
+      players.removeAt(playerIndex);
+      List<String> drawingQueue =
+          List<String>.from(roomData['drawingQueue'] ?? []);
+      print("line after this");
+      int playerDrawingQueueIndex =
+          drawingQueue.indexWhere((userId) => userId == currentUser.uid);
+      drawingQueue.removeAt(playerDrawingQueueIndex);
+
       // Check if this player is the current drawer
       bool isDrawer = roomData['currentDrawerId'] == currentUser.uid;
-
-      // Remove player from list
-      players.removeAt(playerIndex);
+      if (isDrawer) {
+        startDrawing(roomId);
+      }
 
       // Update room
       if (players.isEmpty) {
@@ -399,6 +424,7 @@ class FirestoreService {
         Map<String, dynamic> updateData = {
           'currentPlayers': FieldValue.increment(-1),
           'players': players,
+          'drawingQueue': drawingQueue,
         };
 
         // If this was the drawer, choose next player
@@ -416,57 +442,76 @@ class FirestoreService {
   }
 
   // Start the game
-  Future<bool> startGame(String roomId) async {
+  Future<void> startDrawing(String roomId) async {
     try {
+      final User? currentUser = _auth.currentUser;
       DocumentReference roomRef = _db.collection('Room').doc(roomId);
       DocumentSnapshot roomSnapshot = await roomRef.get();
 
       if (!roomSnapshot.exists) {
-        return false;
+        return;
+      }
+
+      if (currentUser == null) {
+        throw Exception('User not authenticated');
       }
 
       Map<String, dynamic> roomData =
           roomSnapshot.data() as Map<String, dynamic>;
-      List<dynamic> players = roomData['players'] ?? [];
+      List<dynamic> players = List<dynamic>.from(roomData['players'] ?? []);
+      List<String> drawingQueue =
+          List<String>.from(roomData['drawingQueue'] ?? []);
 
-      // Check if there are at least 2 players
-      if (players.length < 2) {
-        return false;
+      // print("Players: $players");
+      // print("Drawing Queue: ${roomData['drawingQueue']}");
+
+      //Get darwer ID and update queue
+      String drawerId = drawingQueue[0];
+      if (currentUser.uid == drawerId) {
+        drawingQueue.removeAt(0);
+        drawingQueue.add(drawerId);
+
+        drawerId = drawingQueue[0];
+
+        print("Drawing queue: $drawingQueue");
+
+        // // Check if there are at least 2 players
+        // if (players.length < 2) {
+        //   return false;
+        // }
+
+        // Choose a random word
+        // String word = _getRandomWord();
+        // String hint = _generateHint(word);
+        // String hiddenWord = _generateHiddenWord(word);
+
+        // Update room status
+        await roomRef.update({
+          // 'status': 'playing',
+          'currentRound': 1,
+          'currentDrawerId': drawerId,
+          'currentWord': "Helo",
+          'hiddenWord': "Hello",
+          'drawingStartAt': DateTime.now(),
+          'drawing': {
+            'elements': [],
+            'lastUpdatedBy': drawerId,
+            'lastUpdatedAt': DateTime.now(),
+          },
+          'drawingQueue': drawingQueue,
+        });
+
+        // // Update the drawer status in players array
+        // List<dynamic> updatedPlayers = players.map((player) {
+        //   return {...player, 'isDrawing': player['userId'] == drawerId};
+        // }).toList();
+
+        // await roomRef.update({'players': updatedPlayers});
+      } else {
+        print("Not drawer");
       }
-
-      // Choose a random player as the first drawer
-      Random random = Random();
-      int drawerIndex = random.nextInt(players.length);
-      String drawerId = players[drawerIndex]['userId'];
-
-      // Choose a random word
-      String word = _getRandomWord();
-      String hint = _generateHint(word);
-      String hiddenWord = _generateHiddenWord(word);
-
-      // Update room status
-      await roomRef.update({
-        'status': 'playing',
-        'currentRound': 1,
-        'currentDrawerId': drawerId,
-        'currentWord': word,
-        'hint': hint,
-        'hiddenWord': hiddenWord,
-        'gameStartTime': DateTime.now(),
-        'timeLeft': '60:00',
-      });
-
-      // Update the drawer status in players array
-      List<dynamic> updatedPlayers = players.map((player) {
-        return {...player, 'isDrawing': player['userId'] == drawerId};
-      }).toList();
-
-      await roomRef.update({'players': updatedPlayers});
-
-      return true;
     } catch (e) {
       print('Error starting game: $e');
-      return false;
     }
   }
 

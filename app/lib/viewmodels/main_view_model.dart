@@ -63,6 +63,7 @@ class MainViewModel extends ChangeNotifier {
     }
   }
 
+
   // Update the createRoom method
   Future<void> createRoom({
     bool isPrivate = true,
@@ -259,6 +260,11 @@ class MainViewModel extends ChangeNotifier {
     String userId,
   ) async {
     await _firestoreService.sendMessage(username, message, roomCode, userId);
+  }
+
+  Future<void> startDrawing() async {
+    await _firestoreService.startDrawing(_room!.roomCode);
+    notifyListeners();
   }
 
   void _subscribeToRoom(String roomId) {
