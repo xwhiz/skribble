@@ -5,11 +5,9 @@ import 'package:flutter/material.dart';
 
 class ChatWidget extends StatefulWidget {
   final String roomId;
-  final String guestName;
 
   // ignore: use_super_parameters
-  const ChatWidget({Key? key, required this.roomId, required this.guestName})
-      : super(key: key);
+  const ChatWidget({Key? key, required this.roomId}) : super(key: key);
 
   @override
   State<ChatWidget> createState() => _ChatWidgetState();
@@ -42,9 +40,12 @@ class _ChatWidgetState extends State<ChatWidget> {
     if (message.isEmpty) return;
 
     final User? currentUser = _auth.currentUser;
-    final String userName = currentUser?.displayName?.isNotEmpty == true
-        ? currentUser!.displayName!
-        : widget.guestName;
+
+    if (currentUser == null) {
+      throw Exception('User not authenticated');
+    }
+
+    final String userName = currentUser.displayName ?? 'Anonymous';
 
     setState(() {
       _isSending = true;
