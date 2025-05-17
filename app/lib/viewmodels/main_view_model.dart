@@ -63,7 +63,6 @@ class MainViewModel extends ChangeNotifier {
     }
   }
 
-
   // Update the createRoom method
   Future<void> createRoom({
     bool isPrivate = true,
@@ -102,42 +101,6 @@ class MainViewModel extends ChangeNotifier {
       _setLoading(false);
     }
   }
-
-  // Similarly update the joinPublicRoom and joinPrivateRoom methods
-  // Future<void> joinPublicRoom() async {
-  //   _setLoading(true);
-  //   _error = null;
-
-  //   try {
-  //     // Clean up previous room first
-  //     await _cleanupPreviousRoom();
-
-  //     final result = await _firestoreService.joinPublicRoom();
-  //     print("result: $result");
-
-  //     if (result != null && result['roomId'] != null) {
-  //       final roomDoc = await FirebaseFirestore.instance
-  //           .collection('Room')
-  //           .doc(result['roomId'])
-  //           .get();
-
-  //       if (roomDoc.exists && roomDoc.data() != null) {
-  //         _room = RoomModel.fromJson(roomDoc.data()!);
-  //         _subscribeToRoom(result['roomId']);
-  //         // Don't manually set currentRoomId as it's a getter
-  //       } else {
-  //         _error = 'Room document not found or empty';
-  //       }
-  //     } else {
-  //       _error = 'Failed to join room: Invalid result';
-  //     }
-  //   } catch (e) {
-  //     _error = 'Failed to join room: $e';
-  //     print(e.toString());
-  //   } finally {
-  //     _setLoading(false);
-  //   }
-  // }
 
   Future<void> joinPublicRoom({required bool isGuest}) async {
     _setLoading(true);

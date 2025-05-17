@@ -27,12 +27,10 @@ class _GameLayoutState extends State<GameLayout>
 
   bool _isChangingTurn = false;
 
-  DrawingViewModel? _drawingViewModel;
+  DrawingViewModel? _drawingViewModel; // initialized late
 
   @override
   void initState() {
-    super.initState();
-
     final mainViewModel = Provider.of<MainViewModel>(context, listen: false);
 
     // Start timer
