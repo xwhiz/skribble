@@ -5,7 +5,6 @@ import 'chat_message_model.dart'; // Import the ChatMessage model
 
 class RoomModel {
   final String roomCode;
-  final String status; // 'waiting', 'playing', 'ended'
   final String? currentDrawerId;
   final String? currentWord;
   final String? hint;
@@ -26,7 +25,6 @@ class RoomModel {
 
   RoomModel({
     required this.roomCode,
-    required this.status,
     this.maxPlayers,
     this.currentPlayers,
     this.currentRound,
@@ -68,7 +66,6 @@ class RoomModel {
 
     var roomModel = RoomModel(
       roomCode: json['roomCode'] ?? '',
-      status: json['status'] ?? 'waiting',
       maxPlayers: json['maxPlayers'] ?? K.maxPlayers,
       currentPlayers: json['currentPlayers'],
       currentRound: json['currentRound'] ?? 0,

@@ -59,7 +59,6 @@ class FirestoreService {
       // Step 1: Look for available public rooms
       QuerySnapshot availableRooms = await db
           .collection(K.roomCollection)
-          .where('status', isEqualTo: 'waiting')
           .where('isPrivate', isEqualTo: false)
           .where('currentPlayers', isLessThan: K.maxPlayers)
           .orderBy('currentPlayers', descending: true)
@@ -143,7 +142,6 @@ class FirestoreService {
     String roomCode = _generateRoomCode();
     await _db.collection('Room').doc(roomCode).set({
       'roomCode': roomCode,
-      'status': 'waiting',
       'maxPlayers': maxPlayers,
       'currentPlayers': 1,
       'currentRound': 0,
@@ -229,8 +227,6 @@ class FirestoreService {
             'joinedAt': DateTime.now(),
             'score': 0,
             'isDrawing': false,
-            'isReady': roomData['status'] !=
-                'waiting', // Auto-ready if game is in progress
           },
         ]),
       });
@@ -297,12 +293,9 @@ class FirestoreService {
           'drawingQueue': drawingQueue,
         };
 
-        // If this was the drawer, choose next player
-        if (isDrawer && roomData['status'] == 'playing') {
-          // Choose next player as drawer (simple round-robin)
+        if (isDrawer) {
           if (players.isNotEmpty) {
-            int nextDrawerIndex = 0; // Default to first player
-            updateData['currentDrawerId'] = players[nextDrawerIndex]['userId'];
+            await startDrawing(roomId);
           }
         }
 
@@ -330,16 +323,12 @@ class FirestoreService {
           RoomModel.fromJson(roomSnapshot.data() as Map<String, dynamic>);
       var players = room.players!;
       var drawingQueue = room.drawingQueue!;
-      bool isNewRoundStarting = drawingQueue.isEmpty;
       int currentRound = room.currentRound!;
-      String? currentDrawerId =
-          drawingQueue.isNotEmpty ? drawingQueue.last : null;
+      String currentDrawerId = room.currentDrawerId!;
 
-      print("$isNewRoundStarting $drawingQueue $currentDrawerId");
+      if (drawingQueue.isNotEmpty) drawingQueue.removeLast();
 
-      if (!isNewRoundStarting) drawingQueue.removeLast();
-
-      if (currentDrawerId != null && currentUser.uid != currentDrawerId) {
+      if (currentUser.uid != currentDrawerId) {
         print("Current ain't the drawer");
         return;
       }
@@ -367,7 +356,6 @@ class FirestoreService {
       // Run this code in a transaction
       await _db.runTransaction((transaction) async {
         transaction.update(roomRef, {
-          'status': 'waiting',
           'currentRound': currentRound,
           'currentDrawerId': currentDrawerId,
           'currentWord': "Hello",
