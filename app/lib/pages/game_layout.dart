@@ -11,7 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class GameLayout extends StatefulWidget {
-  const GameLayout({Key? key}) : super(key: key);
+  const GameLayout({super.key});
 
   @override
   State<GameLayout> createState() => _GameLayoutState();
@@ -111,216 +111,146 @@ class _GameLayoutState extends State<GameLayout>
       },
       child: Scaffold(
         body: SafeArea(
-          child: _isChangingTurn
-              ? Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                    SizedBox(height: 20),
-                    Text(
-                      'Changing turn...',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                  ],
-                )
-              : Column(
-                  children: [
-                    // Top header with timer - FIXED HEIGHT to prevent overflow
-                    SizedBox(
-                      height: 40,
-                      child: Container(
-                        color: Color.fromARGB(179, 32, 42, 53),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            // Left: Timer indicator
-                            Padding(
-                              padding: const EdgeInsets.only(left: 12.0),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.timer,
-                                      color: Colors.white, size: 16),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    _timerText,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize:
-                                          14, // Smaller font size to ensure it fits
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+          child: Column(
+            children: [
+              // Top header with timer - FIXED HEIGHT to prevent overflow
+              HeaderWidget(
+                timerText: _timerText,
+              ),
 
-                            // Center: Word
-                            Flexible(
-                              child: Text(
-                                vm.room?.currentWord?.toUpperCase() ?? "HOUSE",
-                                overflow: TextOverflow
-                                    .ellipsis, // Ensure text doesn't overflow
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ),
+              // // Word display bar
+              // Container(
+              //   height: 20,
+              //   color: Color.fromARGB(179, 32, 42, 53),
+              //   alignment: Alignment.center,
+              //   child: Text(
+              //     vm.room?.hiddenWord ?? '_ _ _ _ _',
+              //     style: TextStyle(
+              //       fontSize: 16,
+              //       fontWeight: FontWeight.bold,
+              //       color: Colors.white,
+              //     ),
+              //   ),
+              // ),
 
-                            // Right: Exit button - Using IconButton with smaller constraints
-                            IconButton(
-                              icon: _isLeavingRoom
-                                  ? CircularProgressIndicator()
-                                  : Icon(Icons.exit_to_app,
-                                      color: Colors.white),
-                              padding: EdgeInsets.zero,
-                              constraints:
-                                  BoxConstraints(), // Remove default constraints
-                              onPressed: () async {
-                                setState(() {
-                                  _isLeavingRoom = true;
-                                });
-
-                                await vm.leaveRoom();
-
-                                setState(() {
-                                  _isLeavingRoom = false;
-                                });
-
-                                Navigator.canPop(context)
-                                    ? Navigator.pop(context)
-                                    : Navigator.pushReplacement(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              const HomePage(),
-                                        ),
-                                      );
-                              },
-                            ),
-                          ],
-                        ),
+              if (_isChangingTurn)
+                Expanded(
+                  flex: 60,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Center(
+                        child: CircularProgressIndicator(),
                       ),
-                    ),
+                      SizedBox(height: 20),
+                      Text(
+                        'Changing turn...',
+                        style: TextStyle(fontSize: 18),
+                      ),
+                    ],
+                  ),
+                ),
 
-                    // Word display bar
+              if (!_isChangingTurn)
+                // Drawing board - using Expanded to take remaining space
+                Expanded(
+                  flex: 60,
+                  child: DrawingBoardWidget(roomId: vm.currentRoomId!),
+                ),
+
+              // Tabs and bottom area
+              Expanded(
+                flex: 40,
+                child: Column(
+                  children: [
+                    // Tab selector
                     Container(
-                      height: 20,
-                      color: Color.fromARGB(179, 32, 42, 53),
-                      alignment: Alignment.center,
-                      child: Text(
-                        vm.room?.hiddenWord ?? '_ _ _ _ _',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-
-                    // Drawing board - using Expanded to take remaining space
-                    Expanded(
-                      flex: 60,
-                      child: DrawingBoardWidget(roomId: vm.currentRoomId!),
-                    ),
-
-                    // Tabs and bottom area
-                    Expanded(
-                      flex: 40,
-                      child: Column(
+                      height: 36,
+                      color: Colors.grey[200],
+                      child: Row(
                         children: [
-                          // Tab selector
-                          Container(
-                            height: 36,
-                            color: Colors.grey[200],
-                            child: Row(
-                              children: [
-                                // Players tab
-                                Expanded(
-                                  child: InkWell(
-                                    onTap: () =>
-                                        setState(() => _selectedTabIndex = 0),
-                                    child: Container(
-                                      alignment: Alignment.center,
-                                      decoration: BoxDecoration(
-                                        border: Border(
-                                          bottom: BorderSide(
-                                            color: _selectedTabIndex == 0
-                                                ? Colors.blue
-                                                : Colors.transparent,
-                                            width: 3,
-                                          ),
-                                        ),
-                                      ),
-                                      child: Text(
-                                        'Players',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: _selectedTabIndex == 0
-                                              ? Colors.blue
-                                              : Colors.black,
-                                        ),
-                                      ),
+                          // Players tab
+                          Expanded(
+                            child: InkWell(
+                              onTap: () =>
+                                  setState(() => _selectedTabIndex = 0),
+                              child: Container(
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  border: Border(
+                                    bottom: BorderSide(
+                                      color: _selectedTabIndex == 0
+                                          ? Colors.blue
+                                          : Colors.transparent,
+                                      width: 3,
                                     ),
                                   ),
                                 ),
-                                // Chat tab
-                                Expanded(
-                                  child: InkWell(
-                                    onTap: () =>
-                                        setState(() => _selectedTabIndex = 1),
-                                    child: Container(
-                                      alignment: Alignment.center,
-                                      decoration: BoxDecoration(
-                                        border: Border(
-                                          bottom: BorderSide(
-                                            color: _selectedTabIndex == 1
-                                                ? Colors.blue
-                                                : Colors.transparent,
-                                            width: 3,
-                                          ),
-                                        ),
-                                      ),
-                                      child: Text(
-                                        'Chat',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: _selectedTabIndex == 1
-                                              ? Colors.blue
-                                              : Colors.black,
-                                        ),
-                                      ),
-                                    ),
+                                child: Text(
+                                  'Players',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: _selectedTabIndex == 0
+                                        ? Colors.blue
+                                        : Colors.black,
                                   ),
                                 ),
-                              ],
+                              ),
                             ),
                           ),
-
-                          // Tab content - takes remaining space
+                          // Chat tab
                           Expanded(
-                            child: IndexedStack(
-                              index: _selectedTabIndex,
-                              children: [
-                                // Players tab
-                                _buildPlayersList(vm.currentRoomId!),
-
-                                // Chat tab
-                                ChatWidget(
-                                  roomId: vm.currentRoomId!,
+                            child: InkWell(
+                              onTap: () =>
+                                  setState(() => _selectedTabIndex = 1),
+                              child: Container(
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  border: Border(
+                                    bottom: BorderSide(
+                                      color: _selectedTabIndex == 1
+                                          ? Colors.blue
+                                          : Colors.transparent,
+                                      width: 3,
+                                    ),
+                                  ),
                                 ),
-                              ],
+                                child: Text(
+                                  'Chat',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: _selectedTabIndex == 1
+                                        ? Colors.blue
+                                        : Colors.black,
+                                  ),
+                                ),
+                              ),
                             ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Tab content - takes remaining space
+                    Expanded(
+                      child: IndexedStack(
+                        index: _selectedTabIndex,
+                        children: [
+                          // Players tab
+                          _buildPlayersList(vm.currentRoomId!),
+
+                          // Chat tab
+                          ChatWidget(
+                            roomId: vm.currentRoomId!,
                           ),
                         ],
                       ),
                     ),
                   ],
                 ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -392,6 +322,97 @@ class _GameLayoutState extends State<GameLayout>
             },
           );
         },
+      ),
+    );
+  }
+}
+
+class HeaderWidget extends StatefulWidget {
+  final String timerText;
+
+  const HeaderWidget({super.key, required this.timerText});
+
+  @override
+  State<HeaderWidget> createState() => _HeaderWidgetState();
+}
+
+class _HeaderWidgetState extends State<HeaderWidget> {
+  bool _isLeavingRoom = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final vm = Provider.of<MainViewModel>(context);
+
+    return SizedBox(
+      height: 40,
+      child: Container(
+        color: Color.fromARGB(179, 32, 42, 53),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Left: Timer indicator
+            Padding(
+              padding: const EdgeInsets.only(left: 12.0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.timer, color: Colors.white, size: 16),
+                  SizedBox(width: 4),
+                  Text(
+                    widget.timerText,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14, // Smaller font size to ensure it fits
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Center: Word
+            Flexible(
+              child: Text(
+                vm.room?.currentWord?.toUpperCase() ?? "HOUSE",
+                overflow: TextOverflow.ellipsis, // Ensure text doesn't overflow
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+
+            // Right: Exit button - Using IconButton with smaller constraints
+            IconButton(
+              icon: _isLeavingRoom
+                  ? CircularProgressIndicator()
+                  : Icon(Icons.exit_to_app, color: Colors.white),
+              padding: EdgeInsets.zero,
+              constraints: BoxConstraints(), // Remove default constraints
+              onPressed: () async {
+                setState(() {
+                  _isLeavingRoom = true;
+                });
+
+                await vm.leaveRoom();
+
+                setState(() {
+                  _isLeavingRoom = false;
+                });
+
+                Navigator.canPop(context)
+                    ? Navigator.pop(context)
+                    : Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const HomePage(),
+                        ),
+                      );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
