@@ -1,14 +1,14 @@
+import 'dart:async';
+
+import 'package:app/data/constants.dart';
 import 'package:app/pages/home_page.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:app/viewmodels/drawing_view_model.dart';
+import 'package:app/viewmodels/main_view_model.dart';
+import 'package:app/widgets/chat_widget.dart';
+import 'package:app/widgets/drawing_board_widget.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:app/viewmodels/main_view_model.dart';
-import 'package:app/viewmodels/drawing_view_model.dart';
-import 'package:app/widgets/drawing_board_widget.dart';
-import 'package:app/widgets/chat_widget.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:async';
-import 'package:app/data/constants.dart';
 
 class GameLayout extends StatefulWidget {
   const GameLayout({Key? key}) : super(key: key);
