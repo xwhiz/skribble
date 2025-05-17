@@ -359,13 +359,17 @@ class FirestoreService {
       // String hint = _generateHint(word);
       // String hiddenWord = _generateHiddenWord(word);
 
+      String currentWord = "apple";
+      // Hidden word is underscores
+      String hiddenWord = currentWord.split('').map((e) => '_').join(' ');
+
       // Run this code in a transaction
       await _db.runTransaction((transaction) async {
         transaction.update(roomRef, {
           'currentRound': currentRound,
           'currentDrawerId': currentDrawerId,
-          'currentWord': "Hello",
-          'hiddenWord': "Hello",
+          'currentWord': currentWord,
+          'hiddenWord': hiddenWord,
           'drawingStartAt': DateTime.now(),
           'drawing': {
             'elements': [],
