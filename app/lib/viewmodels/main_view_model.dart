@@ -223,6 +223,16 @@ class MainViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> addCorrectGuess(String userId) async {
+    if (_room == null) {
+      print('No active room');
+      return;
+    }
+
+    final roomCode = _room!.roomCode;
+    await _firestoreService.addCorrectGuess(roomCode, userId);
+  }
+
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();

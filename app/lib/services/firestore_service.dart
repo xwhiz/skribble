@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:app/data/constants.dart';
+import 'package:app/models/room_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -167,6 +168,7 @@ class FirestoreService {
         },
       ],
       'drawingQueue': [currentUser.uid],
+      'guessedCorrectly': [],
       'roundDuration': roundDuration,
       'createdAt': DateTime.now(),
       'drawingStartAt': DateTime.now(),
@@ -327,62 +329,69 @@ class FirestoreService {
         throw Exception('User not authenticated');
       }
 
-      Map<String, dynamic> roomData =
-          roomSnapshot.data() as Map<String, dynamic>;
-      List<dynamic> players = List<dynamic>.from(roomData['players'] ?? []);
-      List<String> drawingQueue =
-          List<String>.from(roomData['drawingQueue'] ?? []);
+      RoomModel room =
+          RoomModel.fromJson(roomSnapshot.data() as Map<String, dynamic>);
+      var players = room.players!;
+      var drawingQueue = room.drawingQueue!;
 
       // print("Players: $players");
       // print("Drawing Queue: ${roomData['drawingQueue']}");
 
       //Get darwer ID and update queue
       String drawerId = drawingQueue[0];
-      if (currentUser.uid == drawerId) {
-        drawingQueue.removeAt(0);
-        drawingQueue.add(drawerId);
-
-        drawerId = drawingQueue[0];
-
-        print("Drawing queue: $drawingQueue");
-
-        // // Check if there are at least 2 players
-        // if (players.length < 2) {
-        //   return false;
-        // }
-
-        // Choose a random word
-        // String word = _getRandomWord();
-        // String hint = _generateHint(word);
-        // String hiddenWord = _generateHiddenWord(word);
-
-        // Update room status
-        await roomRef.update({
-          // 'status': 'playing',
-          'currentRound': 1,
-          'currentDrawerId': drawerId,
-          'currentWord': "Hello",
-          'hiddenWord': "Hello",
-          'drawingStartAt': DateTime.now(),
-          'drawing': {
-            'elements': [],
-            'lastUpdatedBy': drawerId,
-            'lastUpdatedAt': DateTime.now(),
-          },
-          'drawingQueue': drawingQueue,
-        });
-
-        // // Update the drawer status in players array
-        // List<dynamic> updatedPlayers = players.map((player) {
-        //   return {...player, 'isDrawing': player['userId'] == drawerId};
-        // }).toList();
-
-        // await roomRef.update({'players': updatedPlayers});
-      } else {
-        print("Not drawer");
+      if (currentUser.uid != drawerId) {
+        return;
       }
+
+      drawingQueue.removeAt(0);
+      drawerId = drawingQueue[0];
+
+      print("Drawing queue: $drawingQueue");
+
+      // // Check if there are at least 2 players
+      // if (players.length < 2) {
+      //   return false;
+      // }
+
+      // Choose a random word
+      // String word = _getRandomWord();
+      // String hint = _generateHint(word);
+      // String hiddenWord = _generateHiddenWord(word);
+
+      // Update room status
+      await roomRef.update({
+        // 'status': 'playing',
+        'currentRound': 1,
+        'currentDrawerId': drawerId,
+        'currentWord': "Hello",
+        'hiddenWord': "Hello",
+        'drawingStartAt': DateTime.now(),
+        'drawing': {
+          'elements': [],
+          'lastUpdatedBy': drawerId,
+          'lastUpdatedAt': DateTime.now(),
+        },
+        'drawingQueue': drawingQueue,
+      });
+
+      // // Update the drawer status in players array
+      // List<dynamic> updatedPlayers = players.map((player) {
+      //   return {...player, 'isDrawing': player['userId'] == drawerId};
+      // }).toList();
+
+      // await roomRef.update({'players': updatedPlayers});
     } catch (e) {
       print('Error starting game: $e');
+    }
+  }
+
+  Future<void> addCorrectGuess(String roomId, String userId) async {
+    try {
+      await _db.collection('Room').doc(roomId).update({
+        'guessedCorrectly': FieldValue.arrayUnion([userId]),
+      });
+    } catch (e) {
+      print('Error adding correct guess: $e');
     }
   }
 
