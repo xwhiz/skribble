@@ -15,10 +15,9 @@ class _GuestLoginState extends State<GuestLogin> {
   final nameController = TextEditingController();
 
   Future<void> login() async {
-    String name =
-        nameController.text.trim().isEmpty
-            ? "Anonymous"
-            : nameController.text.trim();
+    String name = nameController.text.trim().isEmpty
+        ? "Anonymous"
+        : nameController.text.trim();
 
     try {
       // Save name locally

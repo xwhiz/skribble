@@ -1,16 +1,26 @@
-# app
+# Skribble
 
-A new Flutter project.
+Skribble is a Flutter-based application with a backend powered by Bun and Express.js.
+
+- `lib/`: Main Dart code for the Flutter app.
+- `assets/`: Static assets for the app.
+- `android/` and `ios/`: Platform-specific configurations.
+
+## Developers
+
+- Muhammad Hamza ([profile](https://github.com/xwhiz))
+- Syed Abdullah Kashif Mashhadi ([profile](https://github.com/abdullahmashhadi))
+- Haseeb Muhammad ([profile](https://github.com/Haseeb-Muhammad))
+- Aqsa Batool ([profile](https://github.com/WhizAqsa))
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+### App
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+1. Install Flutter: [Flutter Installation Guide](https://flutter.dev/docs/get-started/install).
+2. Navigate to the `app/` directory:
+   ```bash
+   cd app
+   flutter pub get
+   flutter run
+   ```
