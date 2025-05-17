@@ -112,7 +112,9 @@ class _GameLayoutState extends State<GameLayout>
     final vm = Provider.of<MainViewModel>(context);
     _seconds = getRemainingTime(vm.room?.drawingStartAt);
 
-    print(vm.room?.currentRound);
+    print("Current round: ${vm.room?.currentRound}");
+    print("round completed: ${vm.isCurrentDrawingCompleted}");
+    print("game completed: ${vm.isGameCompleted}");
 
     if (isWaitingForOtherPlayers) {
       return Scaffold(
