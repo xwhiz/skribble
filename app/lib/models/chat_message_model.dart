@@ -5,12 +5,14 @@ class ChatMessage {
   final String username;
   final String content;
   final Timestamp? timestamp;
+  String type = "text";
 
   ChatMessage({
     required this.userId,
     required this.username,
     required this.content,
     this.timestamp,
+    required this.type,
   });
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
@@ -19,6 +21,7 @@ class ChatMessage {
       username: json['username'] as String? ?? 'Anonymous',
       content: json['content'] as String? ?? '',
       timestamp: json['timestamp'] as Timestamp?,
+      type: json['type'] as String? ?? 'text',
     );
   }
 
@@ -28,6 +31,7 @@ class ChatMessage {
       'username': username,
       'content': content,
       'timestamp': timestamp ?? FieldValue.serverTimestamp(),
+      'type': type,
     };
   }
 }
