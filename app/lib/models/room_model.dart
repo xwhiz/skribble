@@ -14,6 +14,7 @@ class RoomModel {
   final bool? isPrivate;
   final List<PlayerModel>? players;
   final List<String>? drawingQueue;
+  final List<String>? guessedCorrectly;
   final List<ChatMessage>? messages; // New field for player messages
   final int? roundDuration;
   final int? maxPlayers;
@@ -42,23 +43,18 @@ class RoomModel {
     this.createAt,
     this.drawingStartAt,
     this.drawingQueue,
+    this.guessedCorrectly,
   });
 
   factory RoomModel.fromJson(Map<String, dynamic> json) {
-    // Parse players list if it exists
     List<PlayerModel>? playersList;
     if (json['players'] != null) {
-      playersList =
-          (json['players'] as List)
-              .map((playerJson) => PlayerModel.fromJson(playerJson))
-              .toList();
+      playersList = (json['players'] as List)
+          .map((playerJson) => PlayerModel.fromJson(playerJson))
+          .toList();
     }
-    // print("After players");
 
-
-    // Parse playerMessages map if it exists
     List<ChatMessage>? messages;
-
     if (json['messages'] != null) {
       var msgs = List<dynamic>.from(json['messages']);
       messages = msgs.map((msg) => ChatMessage.fromJson(msg)).toList();
@@ -69,8 +65,6 @@ class RoomModel {
       var queue = List<dynamic>.from(json['drawingQueue']);
       drawingQueue = queue.map((e) => e.toString()).toList();
     }
-
-    // print("After messages");
 
     var roomModel = RoomModel(
       roomCode: json['roomCode'] ?? '',
@@ -86,16 +80,18 @@ class RoomModel {
       timeLeft: json['timeLeft'],
       isPrivate: json['isPrivate'] ?? false,
       players: playersList,
-      drawingQueue: drawingQueue,//json['drawingQueue'],
+      drawingQueue: drawingQueue,
+      guessedCorrectly: json['guessedCorrectly'] != null
+          ? (json['guessedCorrectly'] as List).cast<String>()
+          : null,
       roundDuration: json['roundDuration'] ?? K.roundDuration,
       messages: messages,
       createAt:
           json['createAt'] != null ? (json['createAt'] as Timestamp) : null,
-      drawingStartAt:
-          json['drawingStartAt'] != null ? (json['drawingStartAt'] as Timestamp) : null,
+      drawingStartAt: json['drawingStartAt'] != null
+          ? (json['drawingStartAt'] as Timestamp)
+          : null,
     );
-
-    // print("After roomModel");
 
     return roomModel;
   }
