@@ -12,11 +12,11 @@ class CompletedPage extends StatefulWidget {
 }
 
 class _CompletedPageState extends State<CompletedPage> {
+  bool isLoading = false;
+
   @override
   void initState() {
     super.initState();
-
-    Provider.of<MainViewModel>(context, listen: false).removeRoom();
   }
 
   @override
@@ -64,7 +64,15 @@ class _CompletedPageState extends State<CompletedPage> {
             SizedBox(
               width: 400,
               child: ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
+                  setState(() {
+                    isLoading = true;
+                  });
+                  await Provider.of<MainViewModel>(context, listen: false)
+                      .removeRoom();
+                  setState(() {
+                    isLoading = false;
+                  });
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
@@ -84,15 +92,17 @@ class _CompletedPageState extends State<CompletedPage> {
                   ),
                   elevation: 0,
                 ),
-                child: const Text(
-                  "Go to home screen",
-                  style: TextStyle(
-                    fontSize: 24,
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'ComicNeue', // Applying Comic Neue font
-                  ),
-                ),
+                child: isLoading
+                    ? CircularProgressIndicator(color: Colors.white)
+                    : Text(
+                        "Go to home screen",
+                        style: TextStyle(
+                          fontSize: 24,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'ComicNeue', // Applying Comic Neue font
+                        ),
+                      ),
               ),
             ),
           ],
