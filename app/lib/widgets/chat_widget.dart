@@ -41,6 +41,9 @@ class _ChatWidgetState extends State<ChatWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final vm = Provider.of<MainViewModel>(context);
+    final userId = _auth.currentUser?.uid;
+
     return Column(
       children: [
         // Chat messages
@@ -122,53 +125,53 @@ class _ChatWidgetState extends State<ChatWidget> {
           ),
         ),
 
-        // Message input
         // Input area
-        Container(
-          height: 50,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border(top: BorderSide(color: Colors.grey.shade300)),
-          ),
-          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _messageController,
-                  decoration: InputDecoration(
-                    hintText: 'Type guess here...',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide.none,
+        if (vm.room?.currentDrawerId != userId)
+          Container(
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(top: BorderSide(color: Colors.grey.shade300)),
+            ),
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _messageController,
+                    decoration: InputDecoration(
+                      hintText: 'Type guess here...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      isDense: true,
                     ),
-                    filled: true,
-                    fillColor: Colors.grey.shade100,
-                    contentPadding:
-                        EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    isDense: true,
+                    style: TextStyle(fontSize: 14),
+                    onSubmitted: (_) => _sendMessage(),
                   ),
-                  style: TextStyle(fontSize: 14),
-                  onSubmitted: (_) => _sendMessage(),
                 ),
-              ),
-              IconButton(
-                icon: _isSending
-                    ? SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Icon(Icons.send, size: 20),
-                onPressed: _isSending ? null : _sendMessage,
-                color: Colors.blue,
-                padding: EdgeInsets.all(4),
-                constraints: BoxConstraints(minWidth: 36, minHeight: 36),
-              ),
-            ],
+                IconButton(
+                  icon: _isSending
+                      ? SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(Icons.send, size: 20),
+                  onPressed: _isSending ? null : _sendMessage,
+                  color: Colors.blue,
+                  padding: EdgeInsets.all(4),
+                  constraints: BoxConstraints(minWidth: 36, minHeight: 36),
+                ),
+              ],
+            ),
           ),
-        ),
       ],
     );
   }
@@ -211,13 +214,13 @@ class _ChatWidgetState extends State<ChatWidget> {
         'type': "text",
       };
 
-      if (alreadyGuessed) {
-        messageData['type'] = "alreadyGuessed";
-        await roomRef.update({
-          'messages': FieldValue.arrayUnion([messageData])
-        });
-        return;
-      }
+      // if (alreadyGuessed) {
+      //   messageData['type'] = "alreadyGuessed";
+      //   await roomRef.update({
+      //     'messages': FieldValue.arrayUnion([messageData])
+      //   });
+      //   return;
+      // }
 
       if (correctGuess) {
         final correctData = {
