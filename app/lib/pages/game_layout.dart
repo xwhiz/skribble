@@ -26,7 +26,6 @@ class _GameLayoutState extends State<GameLayout>
   Timer? _timer;
 
   bool _isChangingTurn = false;
-  bool _isLeavingRoom = false;
 
   DrawingViewModel? _drawingViewModel;
 

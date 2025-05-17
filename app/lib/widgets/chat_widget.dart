@@ -60,7 +60,7 @@ class _ChatWidgetState extends State<ChatWidget> {
 
       // Create message with client-side timestamp (will still be ordered properly)
       final messageData = {
-        'userId': currentUser?.uid ?? 'anonymous',
+        'userId': currentUser.uid,
         'username': userName,
         'content': message,
         'timestamp': Timestamp
