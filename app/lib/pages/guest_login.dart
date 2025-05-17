@@ -1,8 +1,8 @@
 import 'dart:ui';
-import 'package:app/pages/home_page.dart';
 
+import 'package:app/pages/home_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class GuestLogin extends StatefulWidget {
   const GuestLogin({super.key});
@@ -14,16 +14,28 @@ class GuestLogin extends StatefulWidget {
 class _GuestLoginState extends State<GuestLogin> {
   final nameController = TextEditingController();
 
-  Future<void> login() async {
-    String name = nameController.text.trim().isEmpty
-        ? "Anonymous"
-        : nameController.text.trim();
+  Future<void> saveGuestName() async {
+    String name = nameController.text.trim();
+
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Please provide a name")));
+      return;
+    }
+
+    if (FirebaseAuth.instance.currentUser == null) {
+      await FirebaseAuth.instance.signInAnonymously();
+    }
 
     try {
-      // Save name locally
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('playerName', name);
-      print('Guest name saved: $name');
+      var auth = FirebaseAuth.instance;
+      auth.currentUser!.updateDisplayName(name);
+      auth.currentUser?.reload();
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => HomePage()),
+      );
     } catch (e) {
       print("Error during login: $e");
       ScaffoldMessenger.of(
@@ -70,7 +82,7 @@ class _GuestLoginState extends State<GuestLogin> {
                       TextField(
                         controller: nameController,
                         decoration: InputDecoration(
-                          hintText: "Enter your name",
+                          hintText: "Enter your username",
                           hintStyle: const TextStyle(
                             color: Color.fromARGB(179, 32, 42, 53),
                             fontSize: 14,
@@ -100,12 +112,7 @@ class _GuestLoginState extends State<GuestLogin> {
                         width: 400,
                         child: ElevatedButton(
                           onPressed: () async {
-                            await login();
-
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => HomePage()),
-                            );
+                            await saveGuestName();
                           },
                           style: ElevatedButton.styleFrom(
                             // ignore: deprecated_member_use
