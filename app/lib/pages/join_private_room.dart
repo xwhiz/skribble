@@ -20,13 +20,6 @@ class _JoinPrivateRoomState extends State<JoinPrivateRoom> {
   @override
   void initState() {
     super.initState();
-    final viewModel = Provider.of<MainViewModel>(context, listen: false);
-
-    viewModel.getGuestName().then((name) {
-      setState(() {
-        _guestName = name;
-      });
-    });
   }
 
   @override
@@ -101,7 +94,6 @@ class _JoinPrivateRoomState extends State<JoinPrivateRoom> {
                         onPressed: () async {
                           await matchMakingViewModel.joinPrivateRoom(
                             codeController.text,
-                            guestName: guestName,
                           );
                           Navigator.push(
                             context,
