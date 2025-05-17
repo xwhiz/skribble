@@ -1,3 +1,4 @@
+import 'package:app/pages/home_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -19,13 +20,13 @@ class GameLayout extends StatefulWidget {
 class _GameLayoutState extends State<GameLayout>
     with SingleTickerProviderStateMixin {
   int _selectedTabIndex = 0; // 0 for Players, 1 for Chat
-  late String _guestName;
 
   // Timer countdown
   int _seconds = K.roundDuration;
   Timer? _timer;
 
   bool _isChangingTurn = false;
+  bool _isLeavingRoom = false;
 
   DrawingViewModel? _drawingViewModel;
 
@@ -34,12 +35,6 @@ class _GameLayoutState extends State<GameLayout>
     super.initState();
 
     final mainViewModel = Provider.of<MainViewModel>(context, listen: false);
-
-    mainViewModel.getGuestName().then((name) {
-      setState(() {
-        _guestName = name;
-      });
-    });
 
     // Start timer
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
@@ -178,15 +173,33 @@ class _GameLayoutState extends State<GameLayout>
 
                             // Right: Exit button - Using IconButton with smaller constraints
                             IconButton(
-                              icon:
-                                  Icon(Icons.exit_to_app, color: Colors.white),
+                              icon: _isLeavingRoom
+                                  ? CircularProgressIndicator()
+                                  : Icon(Icons.exit_to_app,
+                                      color: Colors.white),
                               padding: EdgeInsets.zero,
                               constraints:
                                   BoxConstraints(), // Remove default constraints
-                              onPressed: () {
-                                vm.leaveRoom();
-                                Navigator.popUntil(
-                                    context, (route) => route.isFirst);
+                              onPressed: () async {
+                                setState(() {
+                                  _isLeavingRoom = true;
+                                });
+
+                                await vm.leaveRoom();
+
+                                setState(() {
+                                  _isLeavingRoom = false;
+                                });
+
+                                Navigator.canPop(context)
+                                    ? Navigator.pop(context)
+                                    : Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const HomePage(),
+                                        ),
+                                      );
                               },
                             ),
                           ],
@@ -299,7 +312,6 @@ class _GameLayoutState extends State<GameLayout>
                                 // Chat tab
                                 ChatWidget(
                                   roomId: vm.currentRoomId!,
-                                  guestName: _guestName,
                                 ),
                               ],
                             ),
@@ -360,12 +372,7 @@ class _GameLayoutState extends State<GameLayout>
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        player['username']?.toString().isNotEmpty == true
-                            ? player['username']
-                            : (player['userId'] ==
-                                    FirebaseAuth.instance.currentUser?.uid
-                                ? _guestName
-                                : 'Guest'),
+                        player['username'],
                         style: TextStyle(
                           fontWeight:
                               isDrawing ? FontWeight.bold : FontWeight.normal,
