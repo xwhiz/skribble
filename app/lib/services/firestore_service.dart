@@ -183,10 +183,10 @@ class FirestoreService {
   }
 
   // Join a specific room by ID (for mid-game joining)
-  Future<bool> joinPrivateRoom(String id, {String? guestName}) async {
+  Future<bool> joinPrivateRoom(String id) async {
     final User? currentUser = _auth.currentUser;
 
-    if (currentUser == null && guestName == null) {
+    if (currentUser == null) {
       throw Exception('User not authenticated or guest name not provided');
     }
 
@@ -218,18 +218,14 @@ class FirestoreService {
       }
 
       // Determine the player's name
-      final String playerName = currentUser?.displayName?.isNotEmpty == true
-          ? currentUser!.displayName!
-          : guestName ??
-              'Guest-${DateTime.now().millisecondsSinceEpoch % 10000}';
+      final String playerName = currentUser.displayName ?? "Anonymous";
 
       // Add player to room and update count
       await _db.collection('Room').doc(id).update({
         'currentPlayers': FieldValue.increment(1),
         'players': FieldValue.arrayUnion([
           {
-            'userId': currentUser?.uid ??
-                'anonymous', // For guest users, use 'anonymous'
+            'userId': currentUser.uid, // For guest users, use 'anonymous'
             'username': playerName,
             'joinedAt': DateTime.now(),
             'score': 0,
@@ -365,7 +361,7 @@ class FirestoreService {
           // 'status': 'playing',
           'currentRound': 1,
           'currentDrawerId': drawerId,
-          'currentWord': "Helo",
+          'currentWord': "Hello",
           'hiddenWord': "Hello",
           'drawingStartAt': DateTime.now(),
           'drawing': {

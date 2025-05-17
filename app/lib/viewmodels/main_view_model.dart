@@ -1,9 +1,10 @@
+import 'dart:async';
+
 import 'package:app/data/constants.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:async';
+
 import '../models/room_model.dart';
 import '../services/firestore_service.dart';
 import 'drawing_view_model.dart';
@@ -28,80 +29,6 @@ class MainViewModel extends ChangeNotifier {
 
   DrawingViewModel? _drawingViewModel;
 
-  DrawingViewModel getDrawingViewModel() {
-    if (_drawingViewModel == null && currentRoomId != null) {
-      _drawingViewModel = DrawingViewModel(
-        roomId: currentRoomId!,
-      );
-    }
-    return _drawingViewModel!;
-  }
-
-  // Add/update this method to properly clean up before joining a new room
-  Future<void> _cleanupPreviousRoom() async {
-    // Cancel any existing room subscription
-    if (_roomSubscription != null) {
-      // Fixed: Use _roomSubscription, not _roomStream
-      _roomSubscription?.cancel();
-      _roomSubscription = null;
-    }
-
-    // Dispose the drawing view model if it exists
-    if (_drawingViewModel != null) {
-      // No need to manually call dispose, just clear the reference
-      _drawingViewModel = null;
-    }
-
-    // If we have a current room, leave it properly
-    if (_room != null) {
-      try {
-        await _firestoreService.leaveRoom(_room!.roomCode);
-      } catch (e) {
-        print('Error leaving room: $e');
-      }
-      _room = null;
-    }
-  }
-
-  // Update the createRoom method
-  Future<void> createRoom({
-    bool isPrivate = true,
-    int maxPlayers = K.maxPlayers,
-    int totalRounds = K.totalRounds,
-    int roundDuration = K.roundDuration,
-  }) async {
-    _setLoading(true);
-    _error = null;
-
-    try {
-      // Clean up previous room first
-      await _cleanupPreviousRoom();
-
-      // Create the new room
-      final result = await _firestoreService.createRoom(
-          isPrivate: isPrivate,
-          maxPlayers: maxPlayers,
-          totalRounds: totalRounds,
-          roundDuration: roundDuration);
-
-      final roomDoc =
-          await FirebaseFirestore.instance.collection('Room').doc(result).get();
-
-      if (roomDoc.exists && roomDoc.data() != null) {
-        _room = RoomModel.fromJson(roomDoc.data()!);
-        _subscribeToRoom(result);
-        // Don't manually set currentRoomId as it's a getter
-      } else {
-        _error = 'Room document not found or empty';
-      }
-    } catch (e) {
-      _error = 'Failed to create room: $e';
-      print(_error);
-    } finally {
-      _setLoading(false);
-    }
-  }
-
   Future<void> joinPublicRoom({required bool isGuest}) async {
     _setLoading(true);
     _error = null;
@@ -115,14 +42,6 @@ class MainViewModel extends ChangeNotifier {
         await auth.signInAnonymously();
         print("Signed in anonymously as ${auth.currentUser?.uid}");
       }
-
-      final user = auth.currentUser;
-      String userId =
-          user?.uid ?? 'guest_${DateTime.now().millisecondsSinceEpoch}';
-      String userName =
-          isGuest ? await getGuestName() : user?.displayName ?? 'Anonymous';
-
-      print("User $userName with ID $userId is attempting to join a room.");
 
       final result = await _firestoreService.joinPublicRoom(isGuest: isGuest);
 
@@ -162,13 +81,7 @@ class MainViewModel extends ChangeNotifier {
     }
   }
 
-  // Helper function to fetch guest name from SharedPreferences
-  Future<String> getGuestName() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString('playerName') ?? 'Anonymous';
-  }
-
-  Future<void> joinPrivateRoom(String roomCode, {String? guestName}) async {
+  Future<void> joinPrivateRoom(String roomCode) async {
     _setLoading(true);
     _error = null;
 
@@ -178,14 +91,13 @@ class MainViewModel extends ChangeNotifier {
 
       // If no guestName is provided, handle it based on authentication state
       final User? currentUser = _auth.currentUser;
-      if (currentUser == null && guestName == null) {
+      if (currentUser == null) {
         _error = 'User not authenticated and guest name not provided';
         return;
       }
 
       // Pass the guest name or handle the user authentication
-      final result = await _firestoreService.joinPrivateRoom(roomCode,
-          guestName: guestName);
+      final result = await _firestoreService.joinPrivateRoom(roomCode);
 
       if (result == true) {
         final roomDoc = await FirebaseFirestore.instance
@@ -242,6 +154,73 @@ class MainViewModel extends ChangeNotifier {
         notifyListeners();
       }
     });
+  }
+
+  DrawingViewModel getDrawingViewModel() {
+    if (_drawingViewModel == null && currentRoomId != null) {
+      _drawingViewModel = DrawingViewModel(
+        roomId: currentRoomId!,
+      );
+    }
+    return _drawingViewModel!;
+  }
+
+  Future<void> _cleanupPreviousRoom() async {
+    if (_roomSubscription != null) {
+      _roomSubscription?.cancel();
+      _roomSubscription = null;
+    }
+
+    // Dispose the drawing view model if it exists
+    if (_drawingViewModel != null) {
+      // No need to manually call dispose, just clear the reference
+      _drawingViewModel = null;
+    }
+
+    // If we have a current room, leave it properly
+    if (_room != null) {
+      try {
+        await _firestoreService.leaveRoom(_room!.roomCode);
+      } catch (e) {
+        print('Error leaving room: $e');
+      }
+      _room = null;
+    }
+  }
+
+  Future<void> createRoom({
+    bool isPrivate = true,
+    int maxPlayers = K.maxPlayers,
+    int totalRounds = K.totalRounds,
+    int roundDuration = K.roundDuration,
+  }) async {
+    _setLoading(true);
+    _error = null;
+
+    try {
+      await _cleanupPreviousRoom();
+
+      final result = await _firestoreService.createRoom(
+          isPrivate: isPrivate,
+          maxPlayers: maxPlayers,
+          totalRounds: totalRounds,
+          roundDuration: roundDuration);
+
+      final roomDoc =
+          await FirebaseFirestore.instance.collection('Room').doc(result).get();
+
+      if (roomDoc.exists && roomDoc.data() != null) {
+        _room = RoomModel.fromJson(roomDoc.data()!);
+        _subscribeToRoom(result);
+      } else {
+        _error = 'Room document not found or empty';
+      }
+    } catch (e) {
+      _error = 'Failed to create room: $e';
+      print(_error);
+    } finally {
+      _setLoading(false);
+    }
   }
 
   void _setLoading(bool value) {
