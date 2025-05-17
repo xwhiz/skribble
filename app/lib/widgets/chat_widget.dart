@@ -187,7 +187,8 @@ class _ChatWidgetState extends State<ChatWidget> {
     final String userName = currentUser.displayName ?? 'Anonymous';
     final word = vm.room!.currentWord!;
     bool correctGuess = message.toLowerCase() == word.toLowerCase();
-    int distance = levenshteinDistance(message, word);
+    int distance =
+        levenshteinDistance(message.toLowerCase(), word.toLowerCase());
     bool alreadyGuessed = vm.room!.guessedCorrectly != null &&
         vm.room!.guessedCorrectly!.contains(currentUser.uid);
 
