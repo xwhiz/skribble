@@ -1,9 +1,8 @@
+import 'dart:math';
+
 import 'package:app/data/constants.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'dart:math';
-
-import 'package:shared_preferences/shared_preferences.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -45,32 +44,22 @@ class FirestoreService {
   }
 
   Future<Map<String, dynamic>> joinPublicRoom({required bool isGuest}) async {
-    final FirebaseAuth _auth = FirebaseAuth.instance;
-    final FirebaseFirestore _db = FirebaseFirestore.instance;
+    final FirebaseAuth auth = FirebaseAuth.instance;
+    final FirebaseFirestore db = FirebaseFirestore.instance;
 
-    // Sign in anonymously if the user is a guest and not already signed in
-    if (isGuest && _auth.currentUser == null) {
-      await _auth.signInAnonymously();
-
-      print("Signed in anonymously as ${_auth.currentUser?.uid}");
-    }
-
-    final User? currentUser = _auth.currentUser;
-
-    // If not a guest and still not signed in, throw error
-    if (!isGuest && currentUser == null) {
+    if (auth.currentUser == null) {
       throw Exception("User not authenticated");
     }
 
-    String userId =
-        currentUser?.uid ?? 'guest_${DateTime.now().millisecondsSinceEpoch}';
-    String userName = isGuest
-        ? await getGuestName() // from SharedPreferences
-        : currentUser?.displayName ?? 'Anonymous';
+    final User currentUser = auth.currentUser!;
+
+    String userId = currentUser.uid;
+
+    String userName = currentUser.displayName ?? 'Anonymous';
 
     try {
       // Step 1: Look for available public rooms
-      QuerySnapshot availableRooms = await _db
+      QuerySnapshot availableRooms = await db
           .collection('Room')
           .where('status', isEqualTo: 'waiting')
           .where('isPrivate', isEqualTo: false)
@@ -85,10 +74,9 @@ class FirestoreService {
         print('Joining existing room');
 
         String roomId = availableRooms.docs[0].id;
-        DocumentReference roomRef =
-            _db.collection(K.roomCollection).doc(roomId);
+        DocumentReference roomRef = db.collection(K.roomCollection).doc(roomId);
 
-        await _db.runTransaction((transaction) async {
+        await db.runTransaction((transaction) async {
           DocumentSnapshot roomSnapshot = await transaction.get(roomRef);
 
           if (!roomSnapshot.exists) {
@@ -140,12 +128,6 @@ class FirestoreService {
       print('StackTrace: $stackTrace');
       throw Exception('Failed to join a public room: $e');
     }
-  }
-
-// Helper function to fetch guest name from SharedPreferences
-  Future<String> getGuestName() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString('playerName') ?? 'Anonymous';
   }
 
   // Create a new room
