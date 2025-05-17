@@ -15,9 +15,10 @@ class _GuestLoginState extends State<GuestLogin> {
   final nameController = TextEditingController();
 
   Future<void> login() async {
-    String name = nameController.text.trim().isEmpty
-        ? "Anonymous"
-        : nameController.text.trim();
+    String name =
+        nameController.text.trim().isEmpty
+            ? "Anonymous"
+            : nameController.text.trim();
 
     try {
       // Save name locally
@@ -26,9 +27,9 @@ class _GuestLoginState extends State<GuestLogin> {
       print('Guest name saved: $name');
     } catch (e) {
       print("Error during login: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Something went wrong")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Something went wrong")));
     }
   }
 
