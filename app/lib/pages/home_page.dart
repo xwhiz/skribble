@@ -64,8 +64,7 @@ class HomePage extends StatelessWidget {
                                   onTap: viewModel.isLoading
                                       ? null
                                       : () async {
-                                          await viewModel.joinPublicRoom(
-                                              isGuest: true);
+                                          await viewModel.joinPublicRoom();
 
                                           if (viewModel.room != null &&
                                               viewModel.error == null) {
