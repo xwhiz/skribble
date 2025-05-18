@@ -1,5 +1,5 @@
-name: app
-description: "A new Flutter project."
+name: skribble
+description: A drawing game app built with Flutter and Firebase.
 publish_to: "none"
 version: 1.0.0+1
 
