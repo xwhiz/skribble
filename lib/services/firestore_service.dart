@@ -394,6 +394,7 @@ class FirestoreService {
           'drawingQueue': drawingQueue,
           'guessedCorrectly': [],
           'isChangingTurn': false,
+          'showRoundInfo': true,
         });
       });
     } catch (e) {

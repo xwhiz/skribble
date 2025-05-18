@@ -27,7 +27,6 @@ class _GameLayoutState extends State<GameLayout>
   int _seconds = K.roundDuration;
   Timer? _timer;
   bool isWaitingForOtherPlayers = true;
-  bool _showRoundAndPlayerInfo = false;
 
   DrawingViewModel? _drawingViewModel; // initialized late
 
@@ -37,10 +36,7 @@ class _GameLayoutState extends State<GameLayout>
     _timer = Timer.periodic(Duration(seconds: 1), (timer) async {
       final mainViewModel = Provider.of<MainViewModel>(context, listen: false);
       var players = mainViewModel.room?.players ?? [];
-
-      if (_showRoundAndPlayerInfo) {
-        return;
-      }
+      bool showRoundAndPlayerInfo = mainViewModel.room?.showRoundInfo ?? false;
 
       if (players.length <= 1) {
         setState(() {
@@ -65,6 +61,10 @@ class _GameLayoutState extends State<GameLayout>
         });
       }
 
+      if (showRoundAndPlayerInfo) {
+        return;
+      }
+
       if (mainViewModel.isGameCompleted) {
         _timer?.cancel();
         Navigator.pushReplacement(
@@ -86,26 +86,33 @@ class _GameLayoutState extends State<GameLayout>
         _drawingViewModel?.clearCanvas();
         await Provider.of<MainViewModel>(context, listen: false)
             .startNextTurn();
-
-        setState(() {
-          _showRoundAndPlayerInfo = true;
-        });
-
-        Future.delayed(Duration(seconds: 5), () {
-          setState(() {
-            _showRoundAndPlayerInfo = false;
-            _seconds = K.roundDuration;
-          });
-        });
+        resetRoundAndInfoFlag();
       }
     });
 
     super.initState();
     var vm = Provider.of<MainViewModel>(context, listen: false);
     if (vm.room?.currentRound == 0) {
-      print(":::::: Starting round 1");
       vm.startNextTurn();
     }
+
+    if (vm.room?.showRoundInfo == true && vm.room!.players!.length > 1) {
+      resetRoundAndInfoFlag();
+    }
+  }
+
+  Future<void> resetRoundAndInfoFlag() async {
+    final vm = Provider.of<MainViewModel>(context, listen: false);
+    await Future.delayed(Duration(seconds: 5), () async {
+      await FirebaseFirestore.instance
+          .collection(K.roomCollection)
+          .doc(vm.currentRoomId)
+          .update({'showRoundInfo': false});
+
+      setState(() {
+        _seconds = K.roundDuration;
+      });
+    });
   }
 
   @override
@@ -120,10 +127,11 @@ class _GameLayoutState extends State<GameLayout>
     _seconds = getRemainingTime(vm.room?.drawingStartAt);
 
     bool isChangingTurn = vm.room?.isChangingTurn ?? false;
+    bool showRoundInfo = vm.room?.showRoundInfo ?? false;
 
-    print("Current round: ${vm.room?.currentRound}");
-    print("round completed: ${vm.isCurrentDrawingCompleted}");
-    print("game completed: ${vm.isGameCompleted}");
+    // print("Current round: ${vm.room?.currentRound}");
+    // print("round completed: ${vm.isCurrentDrawingCompleted}");
+    // print("game completed: ${vm.isGameCompleted}");
 
     if (isWaitingForOtherPlayers) {
       return Scaffold(
@@ -199,7 +207,8 @@ class _GameLayoutState extends State<GameLayout>
           ),
         ],
       );
-    } else if (_showRoundAndPlayerInfo) {
+    } else if (showRoundInfo &&
+        vm.room!.currentRound! <= vm.room!.totalRounds!) {
       var drawerName = vm.room?.players
               ?.firstWhere(
                 (player) => player.userId == vm.room?.currentDrawerId,

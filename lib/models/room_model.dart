@@ -12,6 +12,7 @@ class RoomModel {
   final String? timeLeft; // Formatted time left "01:25"
   final bool? isPrivate;
   final bool? isChangingTurn;
+  final bool? showRoundInfo;
   final List<PlayerModel>? players;
   final List<String>? drawingQueue;
   final List<String>? guessedCorrectly;
@@ -37,6 +38,7 @@ class RoomModel {
     this.timeLeft,
     this.isPrivate,
     this.isChangingTurn,
+    this.showRoundInfo,
     this.players,
     this.messages, // Initialize playerMessages
     this.roundDuration,
@@ -79,6 +81,7 @@ class RoomModel {
       timeLeft: json['timeLeft'],
       isPrivate: json['isPrivate'] ?? false,
       isChangingTurn: json['isChangingTurn'] ?? false,
+      showRoundInfo: json['showRoundInfo'] ?? false,
       players: playersList,
       drawingQueue: drawingQueue,
       guessedCorrectly: json['guessedCorrectly'] != null
