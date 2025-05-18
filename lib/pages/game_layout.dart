@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:app/data/constants.dart';
+import 'package:app/models/player_model.dart';
 import 'package:app/pages/completed_page.dart';
 import 'package:app/pages/home_page.dart';
 import 'package:app/viewmodels/drawing_view_model.dart';
@@ -183,6 +184,14 @@ class _GameLayoutState extends State<GameLayout>
       );
     }
 
+    if (vm.isGameCompleted) {
+      return Scaffold(
+        body: Center(
+          child: Text('Game completed'),
+        ),
+      );
+    }
+
     // Check if we have a valid room ID
     if (vm.currentRoomId == null) {
       return Scaffold(
@@ -208,13 +217,17 @@ class _GameLayoutState extends State<GameLayout>
         ],
       );
     } else if (showRoundInfo &&
-        vm.room!.currentRound! <= vm.room!.totalRounds!) {
-      var drawerName = vm.room?.players
-              ?.firstWhere(
+        vm.room!.currentRound! <= vm.room!.totalRounds! &&
+        vm.room?.currentRound != 0) {
+      List<PlayerModel> drawer = vm.room?.players
+              ?.where(
                 (player) => player.userId == vm.room?.currentDrawerId,
               )
-              .username ??
-          'Unknown';
+              .toList() ??
+          [];
+      String drawerName =
+          drawer.isNotEmpty ? drawer.first.username! : 'Unknown';
+
       dynamicBoard = Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -378,7 +391,7 @@ class _GameLayoutState extends State<GameLayout>
       color: Colors.grey.shade100,
       child: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance
-            .collection('Room')
+            .collection(K.roomCollection)
             .doc(roomId)
             .snapshots(),
         builder: (context, snapshot) {
