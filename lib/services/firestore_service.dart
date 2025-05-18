@@ -166,6 +166,8 @@ class FirestoreService {
       'drawingQueue': [],
       'guessedCorrectly': [],
       'roundDuration': roundDuration,
+      'showRoundInfo': true,
+      'isChangingTurn': false,
       'createdAt': DateTime.now(),
       'drawingStartAt': null,
       'drawing': {
