@@ -348,20 +348,35 @@ class FirestoreService {
         return;
       }
 
+      if (players.length <= 1) {
+        print("Not enough players to start next turn");
+        return;
+      }
+
+      print("is changing turn");
       await roomRef.update({'isChangingTurn': true});
 
+      if (currentRound == 0) {
+        print("Starting first round");
+        drawingQueue = [];
+      }
+
       if (drawingQueue.isEmpty) {
+        print("Queue is empty");
         // This means the round has been finished.
         currentRound += 1;
         drawingQueue = players.map((e) => e.userId).toList();
       }
 
       if (drawingQueue.isNotEmpty) {
+        print("Queue is not empty");
         currentDrawerId = drawingQueue.removeLast();
       }
 
       String? word = await getRandomWord();
       String hiddenWord = word.split('').map((e) => '_').join(' ');
+
+      print(word);
 
       // Run this code in a transaction
       await _db.runTransaction((transaction) async {
