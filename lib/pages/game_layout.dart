@@ -8,8 +8,8 @@ import 'package:app/viewmodels/drawing_view_model.dart';
 import 'package:app/viewmodels/main_view_model.dart';
 import 'package:app/widgets/chat_widget.dart';
 import 'package:app/widgets/drawing_board_widget.dart';
+import 'package:app/widgets/header_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -33,7 +33,6 @@ class _GameLayoutState extends State<GameLayout>
 
   @override
   void initState() {
-    // Start timer
     _timer = Timer.periodic(Duration(seconds: 1), (timer) async {
       final mainViewModel = Provider.of<MainViewModel>(context, listen: false);
       var players = mainViewModel.room?.players ?? [];
@@ -94,21 +93,26 @@ class _GameLayoutState extends State<GameLayout>
     super.initState();
     var vm = Provider.of<MainViewModel>(context, listen: false);
     if (vm.room?.currentRound == 0) {
-      vm.startNextTurn();
-    }
-
-    if (vm.room?.showRoundInfo == true && vm.room!.players!.length > 1) {
-      resetRoundAndInfoFlag();
+      vm.startNextTurn().then((val) {
+        print(
+            "before reseting info flag: ${vm.room?.showRoundInfo} ${vm.room?.players?.length}");
+        if (vm.room?.showRoundInfo == true && vm.room!.players!.length > 1) {
+          resetRoundAndInfoFlag();
+        }
+      });
     }
   }
 
   Future<void> resetRoundAndInfoFlag() async {
     final vm = Provider.of<MainViewModel>(context, listen: false);
     await Future.delayed(Duration(seconds: 5), () async {
+      print("reseting info flag");
       await FirebaseFirestore.instance
           .collection(K.roomCollection)
           .doc(vm.currentRoomId)
           .update({'showRoundInfo': false});
+
+      print("reseted info flag");
 
       setState(() {
         _seconds = K.roundDuration;
@@ -187,7 +191,8 @@ class _GameLayoutState extends State<GameLayout>
     if (vm.isGameCompleted) {
       return Scaffold(
         body: Center(
-          child: Text('Game completed'),
+          child:
+              Text('Game completed', style: TextStyle(fontFamily: 'ComicNeue')),
         ),
       );
     }
@@ -196,7 +201,8 @@ class _GameLayoutState extends State<GameLayout>
     if (vm.currentRoomId == null) {
       return Scaffold(
         body: Center(
-          child: Text('No active room. Please join a room first.'),
+          child: Text('No active room. Please join a room first.',
+              style: TextStyle(fontFamily: 'ComicNeue')),
         ),
       );
     }
@@ -212,7 +218,7 @@ class _GameLayoutState extends State<GameLayout>
           SizedBox(height: 20),
           Text(
             'Changing turn...',
-            style: TextStyle(fontSize: 18),
+            style: TextStyle(fontSize: 18, fontFamily: 'ComicNeue'),
           ),
         ],
       );
@@ -231,11 +237,14 @@ class _GameLayoutState extends State<GameLayout>
       dynamicBoard = Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text("Round ${vm.room?.currentRound}",
-              style: TextStyle(
-                  fontSize: 24,
-                  fontFamily: 'ComicNeue',
-                  fontWeight: FontWeight.bold)),
+          Text(
+            "Round ${vm.room?.currentRound}",
+            style: TextStyle(
+              fontSize: 24,
+              fontFamily: 'ComicNeue',
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           SizedBox(height: 20),
           Text(
             "Player $drawerName is drawing...",
@@ -302,6 +311,7 @@ class _GameLayoutState extends State<GameLayout>
                                   'Players',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
+                                    fontFamily: 'ComicNeue',
                                     color: _selectedTabIndex == 0
                                         ? Colors.blue
                                         : Colors.black,
@@ -331,6 +341,7 @@ class _GameLayoutState extends State<GameLayout>
                                   'Chat',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
+                                    fontFamily: 'ComicNeue',
                                     color: _selectedTabIndex == 1
                                         ? Colors.blue
                                         : Colors.black,
@@ -382,7 +393,6 @@ class _GameLayoutState extends State<GameLayout>
       final remainingTime = K.roundDuration - timeElapsed.inSeconds;
       return remainingTime > 0 ? remainingTime : 0;
     }
-    print('No drawing start time available');
     return K.roundDuration; // Default to full duration if no start time
   }
 
@@ -401,7 +411,9 @@ class _GameLayoutState extends State<GameLayout>
 
           final data = snapshot.data!.data() as Map<String, dynamic>?;
           if (data == null) {
-            return Center(child: Text('No player data'));
+            return Center(
+                child: Text('No player data',
+                    style: TextStyle(fontFamily: 'ComicNeue')));
           }
 
           final players = data['players'] as List<dynamic>? ?? [];
@@ -434,6 +446,7 @@ class _GameLayoutState extends State<GameLayout>
                       child: Text(
                         player['username'],
                         style: TextStyle(
+                          fontFamily: 'ComicNeue',
                           fontWeight:
                               isDrawing ? FontWeight.bold : FontWeight.normal,
                         ),
@@ -442,6 +455,7 @@ class _GameLayoutState extends State<GameLayout>
                     Text(
                       (player['score'] ?? 0).toString(),
                       style: TextStyle(
+                        fontFamily: 'ComicNeue',
                         fontWeight: FontWeight.bold,
                         color: Colors.blue[800],
                       ),
@@ -452,112 +466,6 @@ class _GameLayoutState extends State<GameLayout>
             },
           );
         },
-      ),
-    );
-  }
-}
-
-class HeaderWidget extends StatelessWidget {
-  final String timerText;
-
-  const HeaderWidget({super.key, required this.timerText});
-
-  @override
-  Widget build(BuildContext context) {
-    final vm = Provider.of<MainViewModel>(context);
-
-    bool isDrawer =
-        vm.room?.currentDrawerId == FirebaseAuth.instance.currentUser?.uid;
-    bool hasGuessed = vm.room!.guessedCorrectly!.contains(
-      FirebaseAuth.instance.currentUser?.uid,
-    );
-
-    String currentWord = vm.room!.currentWord!;
-    String hiddenWord = vm.room!.hiddenWord!;
-
-    return SizedBox(
-      height: 40,
-      child: Container(
-        color: Color.fromARGB(179, 32, 42, 53),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // Left: Timer indicator
-            Flexible(
-              flex: 1,
-              child: Padding(
-                padding: const EdgeInsets.only(left: 12.0),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.timer, color: Colors.white, size: 16),
-                    SizedBox(width: 4),
-                    Text(
-                      timerText,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14, // Smaller font size to ensure it fits
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Center: Word
-            Flexible(
-              flex: 3,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                spacing: 4,
-                children: [
-                  Text(
-                    isDrawer || hasGuessed ? currentWord : hiddenWord,
-                    overflow:
-                        TextOverflow.ellipsis, // Ensure text doesn't overflow
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  Text(
-                    ' (${currentWord.length})',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            Flexible(
-              flex: 1,
-              child: IconButton(
-                icon: Icon(Icons.exit_to_app, color: Colors.white),
-                padding: EdgeInsets.zero,
-                constraints: BoxConstraints(), // Remove default constraints
-                onPressed: () {
-                  vm.leaveRoom();
-
-                  Navigator.canPop(context)
-                      ? Navigator.pop(context)
-                      : Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const HomePage(),
-                          ),
-                        );
-                },
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

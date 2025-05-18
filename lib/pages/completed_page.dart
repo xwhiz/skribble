@@ -50,9 +50,16 @@ class _CompletedPageState extends State<CompletedPage> {
                   //  A card like list style
                   return Card(
                     child: ListTile(
-                      title: Text(player.username ?? ''),
-                      trailing: Text(player.score.toString(),
-                          style: Theme.of(context).textTheme.bodyLarge),
+                      title: Text(player.username ?? '',
+                          style: TextStyle(fontFamily: 'ComicNeue')),
+                      trailing: Text(
+                        player.score.toString(),
+                        style: TextStyle(
+                          fontFamily: 'ComicNeue',
+                          fontSize:
+                              Theme.of(context).textTheme.bodyLarge!.fontSize,
+                        ),
+                      ),
                       leading: index == 0
                           ? Lottie.asset("assets/images/trophy.json")
                           : null,
