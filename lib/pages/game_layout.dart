@@ -187,7 +187,8 @@ class _GameLayoutState extends State<GameLayout>
     if (vm.isGameCompleted) {
       return Scaffold(
         body: Center(
-          child: Text('Game completed'),
+          child:
+              Text('Game completed', style: TextStyle(fontFamily: 'ComicNeue')),
         ),
       );
     }
@@ -196,7 +197,8 @@ class _GameLayoutState extends State<GameLayout>
     if (vm.currentRoomId == null) {
       return Scaffold(
         body: Center(
-          child: Text('No active room. Please join a room first.'),
+          child: Text('No active room. Please join a room first.',
+              style: TextStyle(fontFamily: 'ComicNeue')),
         ),
       );
     }
@@ -212,7 +214,7 @@ class _GameLayoutState extends State<GameLayout>
           SizedBox(height: 20),
           Text(
             'Changing turn...',
-            style: TextStyle(fontSize: 18),
+            style: TextStyle(fontSize: 18, fontFamily: 'ComicNeue'),
           ),
         ],
       );
@@ -231,11 +233,14 @@ class _GameLayoutState extends State<GameLayout>
       dynamicBoard = Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text("Round ${vm.room?.currentRound}",
-              style: TextStyle(
-                  fontSize: 24,
-                  fontFamily: 'ComicNeue',
-                  fontWeight: FontWeight.bold)),
+          Text(
+            "Round ${vm.room?.currentRound}",
+            style: TextStyle(
+              fontSize: 24,
+              fontFamily: 'ComicNeue',
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           SizedBox(height: 20),
           Text(
             "Player $drawerName is drawing...",
@@ -302,6 +307,7 @@ class _GameLayoutState extends State<GameLayout>
                                   'Players',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
+                                    fontFamily: 'ComicNeue',
                                     color: _selectedTabIndex == 0
                                         ? Colors.blue
                                         : Colors.black,
@@ -331,6 +337,7 @@ class _GameLayoutState extends State<GameLayout>
                                   'Chat',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
+                                    fontFamily: 'ComicNeue',
                                     color: _selectedTabIndex == 1
                                         ? Colors.blue
                                         : Colors.black,
@@ -401,7 +408,9 @@ class _GameLayoutState extends State<GameLayout>
 
           final data = snapshot.data!.data() as Map<String, dynamic>?;
           if (data == null) {
-            return Center(child: Text('No player data'));
+            return Center(
+                child: Text('No player data',
+                    style: TextStyle(fontFamily: 'ComicNeue')));
           }
 
           final players = data['players'] as List<dynamic>? ?? [];
@@ -434,6 +443,7 @@ class _GameLayoutState extends State<GameLayout>
                       child: Text(
                         player['username'],
                         style: TextStyle(
+                          fontFamily: 'ComicNeue',
                           fontWeight:
                               isDrawing ? FontWeight.bold : FontWeight.normal,
                         ),
@@ -442,6 +452,7 @@ class _GameLayoutState extends State<GameLayout>
                     Text(
                       (player['score'] ?? 0).toString(),
                       style: TextStyle(
+                        fontFamily: 'ComicNeue',
                         fontWeight: FontWeight.bold,
                         color: Colors.blue[800],
                       ),
@@ -497,6 +508,7 @@ class HeaderWidget extends StatelessWidget {
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
+                        fontFamily: 'ComicNeue',
                         fontSize: 14, // Smaller font size to ensure it fits
                       ),
                     ),
@@ -521,6 +533,7 @@ class HeaderWidget extends StatelessWidget {
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
+                      fontFamily: 'ComicNeue',
                       fontSize: 16,
                     ),
                   ),
@@ -529,6 +542,7 @@ class HeaderWidget extends StatelessWidget {
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
+                      fontFamily: 'ComicNeue',
                       fontSize: 16,
                     ),
                   ),
