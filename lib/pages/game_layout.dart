@@ -470,55 +470,78 @@ class HeaderWidget extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             // Left: Timer indicator
-            Padding(
-              padding: const EdgeInsets.only(left: 12.0),
+            Flexible(
+              flex: 1,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 12.0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.timer, color: Colors.white, size: 16),
+                    SizedBox(width: 4),
+                    Text(
+                      timerText,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14, // Smaller font size to ensure it fits
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Center: Word
+            Flexible(
+              flex: 3,
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                spacing: 4,
                 children: [
-                  Icon(Icons.timer, color: Colors.white, size: 16),
-                  SizedBox(width: 4),
                   Text(
-                    timerText,
+                    isDrawer || hasGuessed ? currentWord : hiddenWord,
+                    overflow:
+                        TextOverflow.ellipsis, // Ensure text doesn't overflow
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: 14, // Smaller font size to ensure it fits
+                      fontSize: 16,
+                    ),
+                  ),
+                  Text(
+                    ' (${currentWord.length})',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
                   ),
                 ],
               ),
             ),
 
-            // Center: Word
             Flexible(
-              child: Text(
-                isDrawer || hasGuessed ? currentWord : hiddenWord,
-                overflow: TextOverflow.ellipsis, // Ensure text doesn't overflow
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+              flex: 1,
+              child: IconButton(
+                icon: Icon(Icons.exit_to_app, color: Colors.white),
+                padding: EdgeInsets.zero,
+                constraints: BoxConstraints(), // Remove default constraints
+                onPressed: () {
+                  vm.leaveRoom();
+
+                  Navigator.canPop(context)
+                      ? Navigator.pop(context)
+                      : Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const HomePage(),
+                          ),
+                        );
+                },
               ),
-            ),
-
-            // Right: Exit button - Using IconButton with smaller constraints
-            IconButton(
-              icon: Icon(Icons.exit_to_app, color: Colors.white),
-              padding: EdgeInsets.zero,
-              constraints: BoxConstraints(), // Remove default constraints
-              onPressed: () {
-                vm.leaveRoom();
-
-                Navigator.canPop(context)
-                    ? Navigator.pop(context)
-                    : Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const HomePage(),
-                        ),
-                      );
-              },
             ),
           ],
         ),

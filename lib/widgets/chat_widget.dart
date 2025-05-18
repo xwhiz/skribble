@@ -157,6 +157,10 @@ class _ChatWidgetState extends State<ChatWidget> {
                     onSubmitted: (_) => _sendMessage(),
                   ),
                 ),
+                Text(
+                  '${_messageController.text.length}',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
                 IconButton(
                   icon: _isSending
                       ? SizedBox(
