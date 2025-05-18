@@ -91,39 +91,6 @@ class HomePage extends StatelessWidget {
                                 const SizedBox(height: 10),
                                 _buildButton(
                                   context,
-                                  icon: Icons.privacy_tip,
-                                  text: "Join Private Game",
-                                  onTap: () {
-                                    final User? currentUser = _auth.currentUser;
-
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => JoinPrivateRoom(
-                                            guestName:
-                                                currentUser?.displayName ??
-                                                    "Guest"),
-                                      ),
-                                    );
-                                  },
-                                ),
-                                const SizedBox(height: 10),
-                                _buildButton(
-                                  context,
-                                  icon: Icons.add,
-                                  text: "Create Room",
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const CreateRoom(),
-                                      ),
-                                    );
-                                  },
-                                ),
-                                const SizedBox(height: 10),
-                                _buildButton(
-                                  context,
                                   icon: Icons.exit_to_app,
                                   text: "Sign Out",
                                   onTap: () async {

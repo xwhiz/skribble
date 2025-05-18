@@ -377,8 +377,6 @@ class FirestoreService {
       String? word = await getRandomWord();
       String hiddenWord = word.split('').map((e) => '_').join(' ');
 
-      print(word);
-
       // Run this code in a transaction
       await _db.runTransaction((transaction) async {
         transaction.update(roomRef, {
