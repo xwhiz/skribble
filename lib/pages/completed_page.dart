@@ -1,6 +1,7 @@
 import 'package:app/pages/home_page.dart';
 import 'package:app/viewmodels/main_view_model.dart';
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 
 class CompletedPage extends StatefulWidget {
@@ -53,7 +54,7 @@ class _CompletedPageState extends State<CompletedPage> {
                       trailing: Text(player.score.toString(),
                           style: Theme.of(context).textTheme.bodyLarge),
                       leading: index == 0
-                          ? Image.asset("assets/images/crown.png")
+                          ? Lottie.asset("assets/images/trophy.json")
                           : null,
                     ),
                   );
