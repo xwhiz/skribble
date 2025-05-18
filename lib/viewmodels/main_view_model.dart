@@ -145,18 +145,6 @@ class MainViewModel extends ChangeNotifier {
     await _firestoreService.sendMessage(username, message, roomCode, userId);
   }
 
-  Future<String> getNextDrawerId() async {
-    if (_room == null) {
-      print('No active room');
-      return '';
-    }
-
-    final roomCode = _room!.roomCode;
-    final nextDrawerId = await _firestoreService.getNextDrawerId(roomCode);
-    print("Next drawer ID: $nextDrawerId");
-    return nextDrawerId;
-  }
-
   Future<void> startNextTurn() async {
     await _firestoreService.startNextTurn(_room!.roomCode);
     notifyListeners();
