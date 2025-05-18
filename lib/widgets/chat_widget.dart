@@ -23,6 +23,8 @@ class _ChatWidgetState extends State<ChatWidget> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  final FocusNode _focusNode = FocusNode();
+
   bool _isSending = false;
 
   @override
@@ -138,6 +140,7 @@ class _ChatWidgetState extends State<ChatWidget> {
                 Expanded(
                   child: TextField(
                     controller: _messageController,
+                    focusNode: _focusNode,
                     decoration: InputDecoration(
                       hintText: 'Type guess here...',
                       border: OutlineInputBorder(
@@ -198,6 +201,7 @@ class _ChatWidgetState extends State<ChatWidget> {
       _isSending = true;
     });
     _messageController.clear();
+    _focusNode.requestFocus();
 
     try {
       // Get current room document
