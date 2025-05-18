@@ -5,7 +5,6 @@ import 'package:app/data/constants.dart';
 import 'package:app/models/room_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class FirestoreService {
@@ -207,7 +206,7 @@ class FirestoreService {
       // Check if user is already in the room
       List<dynamic> players = roomData['players'] ?? [];
       bool alreadyJoined = players.any(
-        (player) => player['userId'] == currentUser?.uid,
+        (player) => player['userId'] == currentUser.uid,
       );
 
       if (alreadyJoined) {

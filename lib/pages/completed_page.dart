@@ -1,4 +1,3 @@
-import 'package:app/models/player_model.dart';
 import 'package:app/pages/home_page.dart';
 import 'package:app/viewmodels/main_view_model.dart';
 import 'package:flutter/material.dart';
