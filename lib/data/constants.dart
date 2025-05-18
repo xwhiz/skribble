@@ -5,5 +5,5 @@ class K {
   static const int roundDuration = 80; // in seconds
   static const int totalRounds = 3;
   static String roomCollection = "Room";
-  static int animationDelay = 0;
+  static int animationDelay = 4;
 }
