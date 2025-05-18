@@ -27,8 +27,7 @@ class _GameLayoutState extends State<GameLayout>
   int _seconds = K.roundDuration;
   Timer? _timer;
   bool isWaitingForOtherPlayers = true;
-  bool hasChoosenWord = false;
-  bool isCompletedOnce = false;
+  bool _showRoundAndPlayerInfo = false;
 
   DrawingViewModel? _drawingViewModel; // initialized late
 
@@ -39,7 +38,7 @@ class _GameLayoutState extends State<GameLayout>
       final mainViewModel = Provider.of<MainViewModel>(context, listen: false);
       var players = mainViewModel.room?.players ?? [];
 
-      if (isCompletedOnce) {
+      if (_showRoundAndPlayerInfo) {
         return;
       }
 
@@ -48,6 +47,7 @@ class _GameLayoutState extends State<GameLayout>
           isWaitingForOtherPlayers = true;
         });
 
+        // game is running already and all players have left
         if (mainViewModel.room?.currentRound != 0) {
           _timer?.cancel();
           Navigator.pushReplacement(
@@ -66,7 +66,7 @@ class _GameLayoutState extends State<GameLayout>
       }
 
       if (mainViewModel.isGameCompleted) {
-        timer.cancel();
+        _timer?.cancel();
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -83,14 +83,19 @@ class _GameLayoutState extends State<GameLayout>
       });
 
       if (_seconds <= 0 || mainViewModel.isCurrentDrawingCompleted) {
-        setState(() {
-          isCompletedOnce = true;
-        });
         _drawingViewModel?.clearCanvas();
         await Provider.of<MainViewModel>(context, listen: false)
             .startNextTurn();
+
         setState(() {
-          isCompletedOnce = false;
+          _showRoundAndPlayerInfo = true;
+        });
+
+        Future.delayed(Duration(seconds: 5), () {
+          setState(() {
+            _showRoundAndPlayerInfo = false;
+            _seconds = K.roundDuration;
+          });
         });
       }
     });
@@ -98,6 +103,7 @@ class _GameLayoutState extends State<GameLayout>
     super.initState();
     var vm = Provider.of<MainViewModel>(context, listen: false);
     if (vm.room?.currentRound == 0) {
+      print(":::::: Starting round 1");
       vm.startNextTurn();
     }
   }
@@ -190,6 +196,28 @@ class _GameLayoutState extends State<GameLayout>
           Text(
             'Changing turn...',
             style: TextStyle(fontSize: 18),
+          ),
+        ],
+      );
+    } else if (_showRoundAndPlayerInfo) {
+      var drawerName = vm.room?.players
+              ?.firstWhere(
+                (player) => player.userId == vm.room?.currentDrawerId,
+              )
+              .username ??
+          'Unknown';
+      dynamicBoard = Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text("Round ${vm.room?.currentRound}",
+              style: TextStyle(
+                  fontSize: 24,
+                  fontFamily: 'ComicNeue',
+                  fontWeight: FontWeight.bold)),
+          SizedBox(height: 20),
+          Text(
+            "Player $drawerName is drawing...",
+            style: TextStyle(fontSize: 18, fontFamily: 'ComicNeue'),
           ),
         ],
       );
@@ -407,17 +435,10 @@ class _GameLayoutState extends State<GameLayout>
   }
 }
 
-class HeaderWidget extends StatefulWidget {
+class HeaderWidget extends StatelessWidget {
   final String timerText;
 
   const HeaderWidget({super.key, required this.timerText});
-
-  @override
-  State<HeaderWidget> createState() => _HeaderWidgetState();
-}
-
-class _HeaderWidgetState extends State<HeaderWidget> {
-  bool _isLeavingRoom = false;
 
   @override
   Widget build(BuildContext context) {
@@ -448,7 +469,7 @@ class _HeaderWidgetState extends State<HeaderWidget> {
                   Icon(Icons.timer, color: Colors.white, size: 16),
                   SizedBox(width: 4),
                   Text(
-                    widget.timerText,
+                    timerText,
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -474,21 +495,11 @@ class _HeaderWidgetState extends State<HeaderWidget> {
 
             // Right: Exit button - Using IconButton with smaller constraints
             IconButton(
-              icon: _isLeavingRoom
-                  ? CircularProgressIndicator()
-                  : Icon(Icons.exit_to_app, color: Colors.white),
+              icon: Icon(Icons.exit_to_app, color: Colors.white),
               padding: EdgeInsets.zero,
               constraints: BoxConstraints(), // Remove default constraints
-              onPressed: () async {
-                setState(() {
-                  _isLeavingRoom = true;
-                });
-
-                await vm.leaveRoom();
-
-                setState(() {
-                  _isLeavingRoom = false;
-                });
+              onPressed: () {
+                vm.leaveRoom();
 
                 Navigator.canPop(context)
                     ? Navigator.pop(context)
