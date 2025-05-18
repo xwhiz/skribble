@@ -166,7 +166,7 @@ class SkribbleLogo extends StatelessWidget {
       alignment: Alignment.center,
       children: [
         Image.asset(
-          '../assets/images/splash-animation.png',
+          'assets/images/splash-animation.png',
           height: 130,
           fit: BoxFit.contain,
         ),
