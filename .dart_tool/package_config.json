@@ -680,13 +680,13 @@
       "languageVersion": "3.4"
     },
     {
-      "name": "skribble",
+      "name": "app",
       "rootUri": "../",
       "packageUri": "lib/",
       "languageVersion": "3.6"
     }
   ],
-  "generated": "2025-05-18T06:14:46.129940Z",
+  "generated": "2025-05-18T06:15:40.926374Z",
   "generator": "pub",
   "generatorVersion": "3.7.0",
   "flutterRoot": "file:///home/hamza/development/flutter",

@@ -1,5 +1,5 @@
-name: skribble
-description: A drawing game app built with Flutter and Firebase.
+name: app
+description: A skribble clone
 publish_to: "none"
 version: 1.0.0+1
 

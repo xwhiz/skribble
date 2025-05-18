@@ -245,57 +245,66 @@ class FirestoreService {
       throw Exception('User not authenticated');
     }
 
-    // Transaction to ensure consistency
-    return _db.runTransaction((transaction) async {
-      DocumentReference roomRef = _db.collection('Room').doc(roomId);
+    try {
+      // Transaction to ensure consistency
+      return _db.runTransaction((transaction) async {
+        DocumentReference roomRef = _db.collection('Room').doc(roomId);
 
-      // Get room data
-      DocumentSnapshot roomSnapshot = await transaction.get(roomRef);
-      if (!roomSnapshot.exists) {
-        return; // Room doesn't exist
-      }
+        // Get room data
+        DocumentSnapshot roomSnapshot = await transaction.get(roomRef);
+        if (!roomSnapshot.exists) {
+          return; // Room doesn't exist
+        }
 
-      Map<String, dynamic> roomData =
-          roomSnapshot.data() as Map<String, dynamic>;
-      List<dynamic> players = roomData['players'] ?? [];
+        Map<String, dynamic> roomData =
+            roomSnapshot.data() as Map<String, dynamic>;
+        List<dynamic> players = roomData['players'] ?? [];
 
-      // Find the player to remove from players list
-      int playerIndex = players.indexWhere(
-        (player) => player['userId'] == currentUser.uid,
-      );
-      if (playerIndex == -1) {
-        return; // Player not found
-      }
+        // Find the player to remove from players list
+        int playerIndex = players.indexWhere(
+          (player) => player['userId'] == currentUser.uid,
+        );
+        if (playerIndex == -1) {
+          return; // Player not found
+        }
 
-      //Find the player to remove from drawing Queue
-      players.removeAt(playerIndex);
-      List<String> drawingQueue =
-          List<String>.from(roomData['drawingQueue'] ?? []);
-      int playerDrawingQueueIndex =
-          drawingQueue.indexWhere((userId) => userId == currentUser.uid);
-      drawingQueue.removeAt(playerDrawingQueueIndex);
+        //Find the player to remove from drawing Queue
+        players.removeAt(playerIndex);
+        List<String> drawingQueue =
+            List<String>.from(roomData['drawingQueue'] ?? []);
+        int playerDrawingQueueIndex =
+            drawingQueue.indexWhere((userId) => userId == currentUser.uid);
+        drawingQueue.removeAt(playerDrawingQueueIndex);
 
-      // Check if this player is the current drawer
-      bool isDrawer = roomData['currentDrawerId'] == currentUser.uid;
+        // Check if this player is the current drawer
+        bool isDrawer = roomData['currentDrawerId'] == currentUser.uid;
 
-      // Update room
-      if (players.isEmpty) {
-        // If last player, delete the room
-        transaction.delete(roomRef);
-      } else {
-        // Otherwise update the room
-        Map<String, dynamic> updateData = {
-          'currentPlayers': FieldValue.increment(-1),
-          'players': players,
-          'drawingQueue': drawingQueue,
-          // to trigger next turn
-          'guessedCorrectly':
-              players.map((e) => e['userId'] as String).toList(),
-        };
+        // Update room
+        if (players.isEmpty) {
+          // If last player, delete the room
+          transaction.delete(roomRef);
+        } else {
+          // Otherwise update the room
+          Map<String, dynamic> updateData = {
+            'currentPlayers': FieldValue.increment(-1),
+            'players': players,
+            'drawingQueue': drawingQueue,
+            // isdrawer, then trigger next turn otherwise remove player from guessed correctly
+            'guessedCorrectly': isDrawer
+                ? players.map((e) => e['userId'] as String).toList()
+                : players
+                    .where((player) => player['userId'] != currentUser.uid)
+                    .map((e) => e['userId'] as String)
+                    .toList(),
+          };
 
-        transaction.update(roomRef, updateData);
-      }
-    });
+          transaction.update(roomRef, updateData);
+        }
+      });
+    } catch (e) {
+      print('Error leaving room: $e');
+      rethrow;
+    }
   }
 
   Future<String> getNextDrawerId(String roomId) async {
@@ -505,6 +514,4 @@ class FirestoreService {
       Iterable.generate(6, (_) => chars.codeUnitAt(rnd.nextInt(chars.length))),
     );
   }
-
-  // Get a random word for the game
 }
