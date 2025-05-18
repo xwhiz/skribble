@@ -47,6 +47,17 @@ class _GameLayoutState extends State<GameLayout>
         setState(() {
           isWaitingForOtherPlayers = true;
         });
+
+        if (mainViewModel.room?.currentRound != 0) {
+          _timer?.cancel();
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const CompletedPage(),
+            ),
+          );
+        }
+
         return;
       } else {
         setState(() {
@@ -85,7 +96,10 @@ class _GameLayoutState extends State<GameLayout>
     });
 
     super.initState();
-    Provider.of<MainViewModel>(context, listen: false).startNextTurn();
+    var vm = Provider.of<MainViewModel>(context, listen: false);
+    if (vm.room?.currentRound == 0) {
+      vm.startNextTurn();
+    }
   }
 
   @override

@@ -245,9 +245,9 @@ class FirestoreService {
       throw Exception('User not authenticated');
     }
 
-    try {
-      // Transaction to ensure consistency
-      return _db.runTransaction((transaction) async {
+    // Transaction to ensure consistency
+    return _db.runTransaction((transaction) async {
+      try {
         DocumentReference roomRef = _db.collection('Room').doc(roomId);
 
         // Get room data
@@ -272,9 +272,13 @@ class FirestoreService {
         players.removeAt(playerIndex);
         List<String> drawingQueue =
             List<String>.from(roomData['drawingQueue'] ?? []);
+
         int playerDrawingQueueIndex =
             drawingQueue.indexWhere((userId) => userId == currentUser.uid);
-        drawingQueue.removeAt(playerDrawingQueueIndex);
+
+        if (playerDrawingQueueIndex != -1) {
+          drawingQueue.removeAt(playerDrawingQueueIndex);
+        }
 
         // Check if this player is the current drawer
         bool isDrawer = roomData['currentDrawerId'] == currentUser.uid;
@@ -300,11 +304,11 @@ class FirestoreService {
 
           transaction.update(roomRef, updateData);
         }
-      });
-    } catch (e) {
-      print('Error leaving room: $e');
-      rethrow;
-    }
+      } catch (e) {
+        print('Error leaving room: $e');
+        rethrow;
+      }
+    });
   }
 
   Future<String> getRandomWord() async {
